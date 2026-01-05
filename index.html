@@ -148,31 +148,26 @@
                     </div>
                 </div>
 
-                <!-- Status Card -->
-                <div class="card status-card" id="statusCard">
-                    <h3>Deployment Status</h3>
-                    <div id="statusIndicator" class="status-indicator">
-                        <span class="status-dot"></span>
-                        <span class="status-text">Calculating...</span>
-                    </div>
-                    <p id="statusMsg" class="status-msg">설정에 따른 배포 가능 여부를 분석 중입니다.</p>
-                </div>
-            </section>
-        </main>
     </div>
+
     <footer class="app-footer">
         <div class="footer-content">
             <div class="footer-info">
-                <p><strong>Technical Basis:</strong> <a href="concept_study_report.md" target="_blank">Calculation
-                        Formula (Roofline Model)</a></p>
-                <p><strong>Update Plan:</strong> Hardware & Model specifications updated monthly. <a href="README.md"
-                        target="_blank">Roadmap</a></p>
+                <p><strong>기술적 근거:</strong> <a href="concept_study_report.md" target="_blank">성능 산출 공식(Roofline Model)
+                        상세 분석</a></p>
+                <p><strong>업데이트 계획:</strong> 신규 하드웨어 및 모델 사양은 매월 업데이트됩니다. <a href="README.md" target="_blank">로드맵 확인</a>
+                </p>
             </div>
             <div class="footer-disclaimer">
-                <p>⚠️ <strong>Disclaimer:</strong> 본 수치는 이론적 예측값으로 실제 환경에 따라 다를 수 있습니다.</p>
+                <p>⚠️ <strong>Disclaimer:</strong> 본 수치는 이론적 예측값으로 실제 사용 환경(OS, 프레임워크 최적화)에 따라 다를 수 있습니다. 실제 배포 전 실측
+                    테스트를 강력히 권장합니다.</p>
             </div>
         </div>
     </footer>
+    </section>
+    </main>
+    </div>
+    </div>
     <script src="app.js"></script>
 </body>
 
