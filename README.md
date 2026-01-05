@@ -2,6 +2,9 @@
 
 LLM 서비스 기획자와 개발자를 위한 인터랙티브 성능 산출 도구입니다. 모델 파라미터, 양자화 비트, 하드웨어 사양을 기반으로 필요한 VRAM과 처리량(TPS), 동시 접속자 수를 예측합니다.
 
+👉 **[LlmVramCalc 바로보기](https://redsunjin.github.io/Collapse/)**
+(GitHub Pages를 통해 즉시 실행됩니다)
+
 ## 🚀 서버 구동 방법
 
 본 도구는 정적 파일(HTML/JS/CSS)로 구성되어 있어 별도의 백엔드 설치가 필요 없습니다. 다음 방법 중 하나로 실행 가능합니다.
@@ -19,7 +22,7 @@ Visual Studio Code를 사용 중이라면 `Live Server` 확장을 설치한 후,
 ### 3. 단순 브라우저 실행
 `index.html` 파일을 크롬이나 엣지 브라우저에 드래그하여 바로 확인할 수 있습니다.
 
-## 🌐 GitHub Pages 배포 (웹에서 바로 보기)
+## 🌐 GitHub Pages 배포 (웹에서 바로 보기) ### 
 GitHub 저장소 설정(Settings) -> Pages 메뉴에서 `Source`를 `Deploy from a branch`로 선택하고 `main` 브랜치의 `/` 루트 디렉토리를 지정하면, 본인의 GitHub 주소로 웹 호스팅이 즉시 활성화됩니다. (예: `https://[username].github.io/[repo-name]/`)
 
 ## 🛠️ 유지보수 및 업데이트 계획
