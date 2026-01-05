@@ -37,7 +37,7 @@
 - [x] Apple M2/M3, AMD MI300X, NVIDIA Pro 등 하드웨어 데이터베이스 확장
 - [x] 사용자 직접 입력(Custom Hardware) 기능 구현
 - [x] 서비스 프리셋 한국어 로컬라이징 및 상세 도움말 추가
-- [x] 차트 렌더링 시 레이아웃 흔들림(Layout Shift) 버그 수정
+- [x] 차트 렌더링 시 레이아웃 흔들림 및 2중 스크롤 버그 수정 (푸터 통합)
 
 ## Phase 4: Technical Evidence & Verification
 - [x] Research and document factual basis (papers, benchmarks, specs)
