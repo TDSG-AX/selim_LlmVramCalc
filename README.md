@@ -1,41 +1,43 @@
-# LlmVramCalc: LLM Performance calculation solution
+# LLM Performance Calculator Pro
 
-본 프로젝트는 GPU 자원(VRAM, Memory Bandwidth)과 LLM 모델의 사양을 기반으로 최적의 처리 능력을 평가하고, 실측 데이터를 통해 예측치를 보완할 수 있는 성능 지표 계산 솔루션을 제안합니다.
+LLM 서비스 기획자와 개발자를 위한 인터랙티브 성능 산출 도구입니다. 모델 파라미터, 양자화 비트, 하드웨어 사양을 기반으로 필요한 VRAM과 처리량(TPS), 동시 접속자 수를 예측합니다.
 
-## 🚀 프로젝트 목적
-- **정밀한 자원 예측**: 모델 크기 및 양자화 비트에 따른 VRAM 요구량 산출.
-- **성능 수치화**: GPU 대역폭과 연산력을 바탕으로 예상 TPS(Tokens Per Second) 도출.
-- **지속적 보정**: 이론적 한계를 극복하기 위해 실측 효율(η)과 오버헤드를 반영하는 보정 시스템 설계.
+## 🚀 서버 구동 방법
 
-## 📁 주요 파일 구성 및 관계
+본 도구는 정적 파일(HTML/JS/CSS)로 구성되어 있어 별도의 백엔드 설치가 필요 없습니다. 다음 방법 중 하나로 실행 가능합니다.
+
+### 1. 전용 개발 서버 사용 (추천)
+Node.js가 설치되어 있다면 아래 명령어로 즉시 가동할 수 있습니다.
+```bash
+npx serve -l 3000 .
+```
+이후 브라우저에서 `http://localhost:3000`으로 접속하세요.
+
+### 2. VS Code Live Server
+Visual Studio Code를 사용 중이라면 `Live Server` 확장을 설치한 후, `index.html`에서 'Open with Live Server'를 클릭하여 실행할 수 있습니다.
+
+### 3. 단순 브라우저 실행
+`index.html` 파일을 크롬이나 엣지 브라우저에 드래그하여 바로 확인할 수 있습니다.
+
+## 🌐 GitHub Pages 배포 (웹에서 바로 보기)
+GitHub 저장소 설정(Settings) -> Pages 메뉴에서 `Source`를 `Deploy from a branch`로 선택하고 `main` 브랜치의 `/` 루트 디렉토리를 지정하면, 본인의 GitHub 주소로 웹 호스팅이 즉시 활성화됩니다. (예: `https://[username].github.io/[repo-name]/`)
+
+## 🛠️ 유지보수 및 업데이트 계획
+
+- **모델 DB 보정 (Monthly)**: 최신 LLM(Llama, Mistral 등)의 실제 FP8/INT4 점유율 데이터를 기반으로 시뮬레이션 공식을 지속적으로 업데이트합니다.
+- **하드웨어 사양 업데이트**: 신규 출시되는 NVIDIA Blackwell(B100/B200), AMD MI 시리즈의 세부 사양을 데이터베이스에 정기 반영합니다.
+- **사용자 피드백 반영**: 실측값과 예측값의 오차 보고를 기반으로 `Efficiency Factor`를 미세 조정합니다.
+
+## 📁 파일 구성 및 관계
 
 | 파일명 | 구분 | 설명 |
 | :--- | :--- | :--- |
-| **[concept_study_report.md](concept_study_report.md)** | **핵심 보고서** | Roofline 모델, PagedAttention 등 기술적 근거와 상술된 수식 및 아키텍처 제안서. |
-| **[llm_performance_poc.py](llm_performance_poc.py)** | **프로토타입** | 실제 Python으로 구현된 성능 계산기. GPU/모델 조합별 VRAM 및 TPS 자동 산출. |
-| **[walkthrough.md](walkthrough.md)** | **결과 요약** | 프로젝트 전체의 성과, 검증 결과 및 향후 확장성(Future Directions) 정리. |
-| **[implementation_plan.md](implementation_plan.md)** | **기획 문서** | 서비스 구현 단계와 검증 전략을 담은 초기 로드맵. |
-| **[task.md](task.md)** | **진행 상황** | 연구 및 개발 단계별 완료된 항목들을 기록한 체크리스트. |
+| **[index.html](index.html)** | **메인 서비스** | 웹 기반 인터랙티브 GUI 대시보드. |
+| **[concept_study_report.md](concept_study_report.md)** | **핵심 보고서** | Roofline 모델, PagedAttention 등 기술적 근거와 상술된 수식 정리. |
+| **[llm_performance_poc.py](llm_performance_poc.py)** | **PoC 스크립트** | 파이썬 기반 성능 계산기 프로토타입. |
+| **[walkthrough.md](walkthrough.md)** | **매뉴얼/워크스루** | 주요 기능 스크린샷 가이드 및 결과 요약. |
 
-### 파일 간 관계 (Structural Relationship)
-1. **기술적 근거(`concept_study_report.md`)** 에 기반하여 
-2. **현실적인 계산 로직(`llm_performance_poc.py`)** 을 구현하였으며,
-3. 이들의 실행 결과와 개념을 **종합 정리(`walkthrough.md`)** 하여 대시보드 형태의 서비스로 발전시킬 수 있는 기반을 마련했습니다.
-
-## 🧮 핵심 모델 (Core Logic)
-- **VRAM 예측**: `Weights_MB + KV_Cache_MB + Activation_Overhead`
-- **Throughput(TPS) 예측**: `Bandwidth_GBs / Weight_Size_GB * Efficiency_Factor`
-
-## 🛠 실행 방법
-필요한 라이브러리 없이 표준 Python 환경에서 실행 가능합니다.
-```bash
-python llm_performance_poc.py
-```
-
-## 📚 참고 문헌 (References)
-- *Kwon et al. (2023)* - "Efficient Memory Management for Large Language Model Serving with PagedAttention" (vLLM)
-- *FlashAttention (2022)* - Dao et al.
-- *NVIDIA TensorRT-LLM* 기술 문서 등
-
----
-*본 프로젝트는 LLM 인프라 최적화 및 운영 효율성 극대화를 위한 연구용 자재입니다.*
+## ⚠️ 안내 사항
+- 본 도구는 이론적 공식과 하드웨어 사양을 기반으로 한 **예측값**을 제공합니다.
+- 실제 배포 시에는 OS 점유 메모리, 프레임워크(vLLM, TensorRT-LLM)의 최적화 수준에 따라 실제 결과가 다를 수 있습니다.
+- 모든 수치는 **참고용**이며, 상용 환경 배포 전 반드시 실제 벤치마크 테스트를 권장합니다.
