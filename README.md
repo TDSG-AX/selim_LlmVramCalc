@@ -2,7 +2,7 @@
 
 LLM 서비스 기획자와 개발자를 위한 인터랙티브 성능 산출 도구입니다. 모델 파라미터, 양자화 비트, 하드웨어 사양을 기반으로 필요한 VRAM과 처리량(TPS), 동시 접속자 수를 예측합니다.
 
-👉 **[LlmVramCalc 바로보기](https://redsunjin.github.io/Collapse/)**
+👉 **[LlmVramCalc 바로보기](https://tdsg-ax.github.io/selim_LlmVramCalc/)**
 (GitHub Pages를 통해 즉시 실행됩니다)
 
 ## 🚀 서버 구동 방법
