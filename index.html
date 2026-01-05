@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body class="light-theme">
     <div class="app-container">
         <!-- Sidebar: AI Assistant -->
@@ -42,6 +44,18 @@
                 <div class="card config-card">
                     <h3>Configuration</h3>
                     <div class="input-group">
+                        <label for="agentPreset">Agent Type Preset</label>
+                        <select id="agentPreset">
+                            <option value="custom">Custom Configuration</option>
+                            <option value="chatbot">General Chatbot (Balanced)</option>
+                            <option value="test_gen">Test Scenario Generator (Logic-heavy)</option>
+                            <option value="code_commenter">Code Commenter (Fast/Efficient)</option>
+                            <option value="code_analyzer">Code/Repo Analyzer (Long Context)</option>
+                            <option value="refactor_expert">Refactoring Expert (High Intelligence)</option>
+                        </select>
+                        <small class="helper-text">서비스 성격에 맞춰 권장 값을 자동으로 설정합니다.</small>
+                    </div>
+                    <div class="input-group">
                         <label for="gpuSelect">Target GPU</label>
                         <select id="gpuSelect">
                             <option value="RTX 4090">NVIDIA RTX 4090 (24GB)</option>
@@ -73,22 +87,26 @@
                 <div class="card summary-card">
                     <h3>Key Metrics Summary</h3>
                     <div class="summary-grid">
-                        <div class="summary-item">
-                            <span class="label">Total VRAM Req.</span>
+                        <div class="summary-item" title="모델 로드 및 대화 문맥 유지에 필요한 전체 비디오 메모리">
+                            <span class="label">Total VRAM Req. ℹ️</span>
                             <span class="value" id="totalVram">-- GB</span>
                         </div>
-                        <div class="summary-item">
-                            <span class="label">Max Concurrency</span>
+                        <div class="summary-item" title="동일한 GPU에서 지연 시간 저하 없이 동시 처리 가능한 사용자 수">
+                            <span class="label">Max Concurrency ℹ️</span>
                             <span class="value" id="maxConcurrency">-- sessions</span>
                         </div>
-                        <div class="summary-item">
-                            <span class="label">Total Throughput</span>
+                        <div class="summary-item" title="GPU가 1초에 생성할 수 있는 모델 전체 토큰량">
+                            <span class="label">Total Throughput ℹ️</span>
                             <span class="value" id="totalTps">-- TPS</span>
                         </div>
-                        <div class="summary-item">
-                            <span class="label">TPS per User</span>
+                        <div class="summary-item" title="개별 사용자가 체감하는 초당 토큰 생성 속도 (15~20 이상 권장)">
+                            <span class="label">TPS per User ℹ️</span>
                             <span class="value" id="userTps">-- TPS</span>
                         </div>
+                    </div>
+                    <div class="metric-explainer" id="metricExplainer">
+                        <p><strong>TPS란?</strong> Tokens Per Second의 약자로, 초당 생성되는 글자수와 유사합니다. 사람이 읽기에 편안한 속도는 약 15~20
+                            TPS 이상입니다.</p>
                     </div>
                 </div>
 
@@ -112,4 +130,5 @@
     </div>
     <script src="app.js"></script>
 </body>
+
 </html>

@@ -161,7 +161,7 @@ button.secondary-btn {
     padding: 24px;
     border-radius: 16px;
     box-shadow: var(--shadow);
-    border: 1px solid rgba(0,0,0,0.02);
+    border: 1px solid rgba(0, 0, 0, 0.02);
 }
 
 .card h3 {
@@ -185,7 +185,8 @@ button.secondary-btn {
     color: var(--text-secondary);
 }
 
-.input-group select, .input-group input[type="number"] {
+.input-group select,
+.input-group input[type="number"] {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border-color);
@@ -244,16 +245,59 @@ button.secondary-btn {
     background-color: #ccc;
 }
 
-.status-indicator.ok { background-color: #d1e7dd; color: #0f5132; }
-.status-indicator.ok .status-dot { background-color: #198754; }
+.status-indicator.ok {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
 
-.status-indicator.warn { background-color: #fff3cd; color: #664d03; }
-.status-indicator.warn .status-dot { background-color: #ffc107; }
+.status-indicator.ok .status-dot {
+    background-color: #198754;
+}
 
-.status-indicator.error { background-color: #f8d7da; color: #842029; }
-.status-indicator.error .status-dot { background-color: #dc3545; }
+.status-indicator.warn {
+    background-color: #fff3cd;
+    color: #664d03;
+}
+
+.status-indicator.warn .status-dot {
+    background-color: #ffc107;
+}
+
+.status-indicator.error {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.status-indicator.error .status-dot {
+    background-color: #dc3545;
+}
 
 .status-msg {
     font-size: 0.9rem;
     color: var(--text-secondary);
+}
+
+.helper-text {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    margin-top: 4px;
+}
+
+.metric-explainer {
+    margin-top: 24px;
+    padding: 16px;
+    background-color: var(--bot-msg-bg);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.metric-explainer p {
+    margin-bottom: 8px;
+}
+
+.summary-item {
+    cursor: help;
 }

@@ -6,6 +6,15 @@ const GPU_SPECS = {
     "H100_SXM": { vram: 80, bandwidth: 3352 }
 };
 
+// Presets Configuration
+const AGENT_PRESETS = {
+    "chatbot": { params: 8, bits: 4, seq: 8192, gpu: "RTX 4090", desc: "일상적인 대화를 위한Balanced 설정입니다." },
+    "test_gen": { params: 14, bits: 4, seq: 16384, gpu: "RTX 4090", desc: "복잡한 시나리오 생성을 위한 Logic-heavy 설정입니다." },
+    "code_commenter": { params: 7, bits: 4, seq: 4096, gpu: "RTX 3090", desc: "빠른 코드 주석 생성을 위한 Fast-Inference 설정입니다." },
+    "code_analyzer": { params: 14, bits: 4, seq: 32768, gpu: "A100_80GB", desc: "대규모 코드 분석을 위한 Long-Context 설정입니다." },
+    "refactor_expert": { params: 70, bits: 4, seq: 8192, gpu: "A100_80GB", desc: "고수준 리팩토링을 위한 High-Intelligence 설정입니다." }
+};
+
 // State
 let vramChart = null;
 
@@ -15,6 +24,7 @@ const modelSizeInput = document.getElementById('modelSize');
 const quantizationSelect = document.getElementById('quantization');
 const contextLenInput = document.getElementById('contextLen');
 const contextLenVal = document.getElementById('contextLenVal');
+const agentPreset = document.getElementById('agentPreset');
 
 const totalVramEl = document.getElementById('totalVram');
 const maxConcurrencyEl = document.getElementById('maxConcurrency');
@@ -55,10 +65,15 @@ function initChart() {
 }
 
 function attachListeners() {
-    [gpuSelect, modelSizeInput, quantizationSelect, contextLenInput].forEach(el => {
+    [agentPreset, gpuSelect, modelSizeInput, quantizationSelect, contextLenInput].forEach(el => {
         el.addEventListener('input', () => {
             if (el === contextLenInput) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
+            }
+            if (el === agentPreset) {
+                handlePresetChange();
+            } else if (el !== agentPreset) {
+                agentPreset.value = "custom";
             }
             calculate();
         });
@@ -68,6 +83,19 @@ function attachListeners() {
     document.getElementById('userInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleChat();
     });
+}
+
+function handlePresetChange() {
+    const preset = AGENT_PRESETS[agentPreset.value];
+    if (!preset) return;
+
+    modelSizeInput.value = preset.params;
+    quantizationSelect.value = preset.bits;
+    contextLenInput.value = preset.seq;
+    contextLenVal.textContent = preset.seq.toLocaleString();
+    gpuSelect.value = preset.gpu;
+
+    addChatMessage(`[서비스 최적화] ${preset.desc} 권장 사양으로 자동 설정되었습니다.`, 'bot');
 }
 
 function calculate() {
@@ -112,7 +140,7 @@ function updateStatus(needed, available, concurrency) {
     } else if (concurrency === 0) {
         statusIndicator.classList.add('warn');
         statusText.textContent = 'Single Session Only';
-        statusMsg.textContent = '모델 로드는 가능하나, 동시 요청을 처리할 여유 메모리가 부족합니다.';
+        statusMsg.textContent = '모델 로드는 가능하나, 대화 문맥(KV Cache)을 유지하며 다수 사용자를 수용할 메모리가 부족합니다.';
     } else {
         statusIndicator.classList.add('ok');
         statusText.textContent = 'Deployment Ready';
@@ -126,25 +154,29 @@ function updateChart(w, k, o, total) {
     vramChart.update();
 }
 
-// Simple Chat Bot Mockup
 function handleChat() {
     const input = document.getElementById('userInput');
-    const text = input.value.trim();
+    const text = input.value.trim().toLowerCase();
     if (!text) return;
 
-    addChatMessage(text, 'user');
+    addChatMessage(input.value, 'user');
     input.value = '';
 
-    // Simple Guide Logic
     setTimeout(() => {
-        let response = "죄송합니다. 아직 학습 중인 기능입니다. 모델 크기와 GPU를 선택해 보세요!";
-        
-        if (text.includes("추천") || text.includes("궁금")) {
-            response = "일반적인 챗봇 에이전트라면 Llama-3 8B 모델을 INT4 양자화로 사용하는 것을 권장합니다. RTX 4090 한 대로도 약 8~10명의 동시 접속자를 처리할 수 있습니다.";
-        } else if (text.includes("VRAM") || text.includes("메모리")) {
-            response = "VRAM은 모델의 무게와 대화의 길이(KV Cache)에 의해 결정됩니다. 대화가 길어질수록 메모리 사용량이 선형적으로 증가하니 주의하세요.";
+        let response = "질문 주신 에이전트 서비스에 대해 분석 중입니다. 위 대시보드의 설정값을 조정하며 실시간 지표를 확인해 보세요.";
+
+        if (text.includes("코드 분석") || text.includes("analyzer")) {
+            response = "코드 분석 에이전트는 전체 파일을 읽어야 하므로 **Context Length**가 가장 중요합니다. 32k 이상을 설정하고, 정확도를 위해 14B 이상의 모델을 추천합니다.";
+        } else if (text.includes("리팩토링") || text.includes("refactor")) {
+            response = "리팩토링은 고도화된 논리력이 필요하므로 **Model Size(Parameters)**가 최소 70B(예: Llama-3 70B)는 되어야 안정적인 코드를 생성합니다.";
+        } else if (text.includes("주석") || text.includes("comment")) {
+            response = "단순 주석 생성은 속도가 생명입니다. 8B급 모델을 4-bit 양자화로 사용하면 가장 쾌적한 TPS를 얻을 수 있습니다.";
+        } else if (text.includes("테스트") || text.includes("scenario")) {
+            response = "테스트 케이스 생성은 중간급 지능(14B~20B)이 적절합니다. 너무 작은 모델은 엣지 케이스를 놓칠 수 있습니다.";
+        } else if (text.includes("tps") || text.includes("속도")) {
+            response = "TPS는 생성 속도입니다. 15 TPS는 사람이 읽는 속도와 비슷하고, 30 TPS 이상이면 매우 빠르다고 느낍니다. 에이전트 서비스라면 20 TPS 이상 유지를 권장합니다.";
         }
-        
+
         addChatMessage(response, 'bot');
     }, 600);
 }
