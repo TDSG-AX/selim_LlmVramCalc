@@ -327,3 +327,63 @@ button.secondary-btn {
 .summary-item {
     cursor: help;
 }
+
+/* Footer Styles (Integrated Card) */
+.app-footer {
+    margin-top: 40px;
+    padding: 32px;
+    background-color: #f8f9fa;
+    /* Light subtle gray */
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.footer-info {
+    flex: 1.2;
+}
+
+.footer-info p {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.footer-info p strong {
+    color: var(--text-primary);
+}
+
+.footer-info a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.footer-disclaimer {
+    flex: 1;
+    background-color: white;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #fee2e2;
+    /* Subtle red alert border */
+    line-height: 1.6;
+    font-size: 0.8rem;
+}
+
+.footer-disclaimer strong {
+    color: #dc3545;
+}
+
+@media (max-width: 900px) {
+    .footer-content {
+        flex-direction: column;
+        gap: 24px;
+    }
+}
