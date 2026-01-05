@@ -1,14 +1,26 @@
 // GPU Specifications
 const GPU_SPECS = {
+    // NVIDIA Data Center
+    "H100_SXM": { vram: 80, bandwidth: 3352 },
+    "A100_80GB": { vram: 80, bandwidth: 2039 },
+    "A100_40GB": { vram: 40, bandwidth: 1555 },
+    // NVIDIA Workstation
+    "A6000": { vram: 48, bandwidth: 768 },
+    "A4000": { vram: 16, bandwidth: 448 },
+    // NVIDIA Consumer
     "RTX 4090": { vram: 24, bandwidth: 1008 },
     "RTX 3090": { vram: 24, bandwidth: 936 },
-    "A100_80GB": { vram: 80, bandwidth: 2039 },
-    "H100_SXM": { vram: 80, bandwidth: 3352 }
+    // Apple Silicon (Unified Memory)
+    "M3_MAX": { vram: 128, bandwidth: 400 },
+    "M2_ULTRA": { vram: 192, bandwidth: 800 },
+    // AMD Instinct
+    "MI300X": { vram: 192, bandwidth: 5300 },
+    "MI250X": { vram: 128, bandwidth: 3200 }
 };
 
 // Presets Configuration
 const AGENT_PRESETS = {
-    "chatbot": { params: 8, bits: 4, seq: 8192, gpu: "RTX 4090", desc: "일상적인 대화를 위한Balanced 설정입니다." },
+    "chatbot": { params: 8, bits: 4, seq: 8192, gpu: "RTX 4090", desc: "일상적인 대화를 위한 Balanced 설정입니다." },
     "test_gen": { params: 14, bits: 4, seq: 16384, gpu: "RTX 4090", desc: "복잡한 시나리오 생성을 위한 Logic-heavy 설정입니다." },
     "code_commenter": { params: 7, bits: 4, seq: 4096, gpu: "RTX 3090", desc: "빠른 코드 주석 생성을 위한 Fast-Inference 설정입니다." },
     "code_analyzer": { params: 14, bits: 4, seq: 32768, gpu: "A100_80GB", desc: "대규모 코드 분석을 위한 Long-Context 설정입니다." },
@@ -20,6 +32,9 @@ let vramChart = null;
 
 // DOM Elements
 const gpuSelect = document.getElementById('gpuSelect');
+const customHwFields = document.getElementById('customHwFields');
+const customVramInput = document.getElementById('customVram');
+const customBandwidthInput = document.getElementById('customBandwidth');
 const modelSizeInput = document.getElementById('modelSize');
 const quantizationSelect = document.getElementById('quantization');
 const contextLenInput = document.getElementById('contextLen');
@@ -65,16 +80,25 @@ function initChart() {
 }
 
 function attachListeners() {
-    [agentPreset, gpuSelect, modelSizeInput, quantizationSelect, contextLenInput].forEach(el => {
+    [agentPreset, gpuSelect, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput].forEach(el => {
         el.addEventListener('input', () => {
             if (el === contextLenInput) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
             }
             if (el === agentPreset) {
                 handlePresetChange();
-            } else if (el !== agentPreset) {
+            } else if (el !== agentPreset && el !== customVramInput && el !== customBandwidthInput) {
                 agentPreset.value = "custom";
             }
+
+            if (el === gpuSelect) {
+                if (gpuSelect.value === 'custom_hw') {
+                    customHwFields.classList.remove('hidden');
+                } else {
+                    customHwFields.classList.add('hidden');
+                }
+            }
+
             calculate();
         });
     });
@@ -100,7 +124,17 @@ function handlePresetChange() {
 
 function calculate() {
     const gpuName = gpuSelect.value;
-    const gpu = GPU_SPECS[gpuName];
+    let vram, bandwidth;
+
+    if (gpuName === 'custom_hw') {
+        vram = parseFloat(customVramInput.value);
+        bandwidth = parseFloat(customBandwidthInput.value);
+    } else {
+        const gpu = GPU_SPECS[gpuName];
+        vram = gpu.vram;
+        bandwidth = gpu.bandwidth;
+    }
+
     const paramsB = parseFloat(modelSizeInput.value);
     const bits = parseInt(quantizationSelect.value);
     const seqLen = parseInt(contextLenInput.value);
@@ -113,11 +147,11 @@ function calculate() {
     const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
 
     // 2. Concurrency
-    const availableForKv = gpu.vram - weightMem - systemReserve - frameworkOverhead;
+    const availableForKv = vram - weightMem - systemReserve - frameworkOverhead;
     const maxConcurrency = availableForKv > 0 ? Math.floor(availableForKv / kvCacheOneUser) : 0;
 
     // 3. Throughput
-    const theoreticalTps = gpu.bandwidth / weightMem;
+    const theoreticalTps = bandwidth / weightMem;
     const actualTpsTotal = theoreticalTps * 0.7; // 70% efficiency
     const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
 
@@ -127,8 +161,8 @@ function calculate() {
     totalTpsEl.textContent = `${actualTpsTotal.toFixed(1)} TPS`;
     userTpsEl.textContent = `${tpsPerUser.toFixed(1)} TPS`;
 
-    updateStatus(totalNeededOneUser, gpu.vram, maxConcurrency);
-    updateChart(weightMem, kvCacheOneUser, frameworkOverhead, gpu.vram);
+    updateStatus(totalNeededOneUser, vram, maxConcurrency);
+    updateChart(weightMem, kvCacheOneUser, frameworkOverhead, vram);
 }
 
 function updateStatus(needed, available, concurrency) {

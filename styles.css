@@ -173,6 +173,32 @@ button.secondary-btn {
     letter-spacing: 0.5px;
 }
 
+.card.chart-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
+    /* 고정 최소 높이로 레이아웃 흔들림 방지 */
+}
+
+.chart-wrapper {
+    flex: 1;
+    position: relative;
+    max-height: 300px;
+    width: 100%;
+}
+
+/* Form Styles */
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.hidden {
+    display: none !important;
+}
+
 /* Form Styles */
 .input-group {
     margin-bottom: 16px;

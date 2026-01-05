@@ -44,25 +44,54 @@
                 <div class="card config-card">
                     <h3>Configuration</h3>
                     <div class="input-group">
-                        <label for="agentPreset">Agent Type Preset</label>
+                        <label for="agentPreset">에이전트 서비스 유형</label>
                         <select id="agentPreset">
-                            <option value="custom">Custom Configuration</option>
-                            <option value="chatbot">General Chatbot (Balanced)</option>
-                            <option value="test_gen">Test Scenario Generator (Logic-heavy)</option>
-                            <option value="code_commenter">Code Commenter (Fast/Efficient)</option>
-                            <option value="code_analyzer">Code/Repo Analyzer (Long Context)</option>
-                            <option value="refactor_expert">Refactoring Expert (High Intelligence)</option>
+                            <option value="custom">직접 설정</option>
+                            <option value="chatbot">일반 챗봇 (균형 잡힌 성능)</option>
+                            <option value="test_gen">테스트 시나리오 생성 (논리 중시)</option>
+                            <option value="code_commenter">코드 주석 생성 (속도/효율 중시)</option>
+                            <option value="code_analyzer">코드/저장소 분석 (긴 문맥 필요)</option>
+                            <option value="refactor_expert">리팩토링 전문가 (고도의 지능 필요)</option>
                         </select>
                         <small class="helper-text">서비스 성격에 맞춰 권장 값을 자동으로 설정합니다.</small>
                     </div>
                     <div class="input-group">
-                        <label for="gpuSelect">Target GPU</label>
+                        <label for="gpuSelect">대상 하드웨어 (GPU/NPU)</label>
                         <select id="gpuSelect">
-                            <option value="RTX 4090">NVIDIA RTX 4090 (24GB)</option>
-                            <option value="RTX 3090">NVIDIA RTX 3090 (24GB)</option>
-                            <option value="A100_80GB">NVIDIA A100 (80GB)</option>
-                            <option value="H100_SXM">NVIDIA H100 SXM (80GB)</option>
+                            <optgroup label="NVIDIA Data Center">
+                                <option value="H100_SXM">NVIDIA H100 SXM (80GB)</option>
+                                <option value="A100_80GB">NVIDIA A100 (80GB)</option>
+                                <option value="A100_40GB">NVIDIA A100 (40GB)</option>
+                            </optgroup>
+                            <optgroup label="NVIDIA Workstation">
+                                <option value="A6000">NVIDIA RTX A6000 (48GB)</option>
+                                <option value="A4000">NVIDIA RTX A4000 (16GB)</option>
+                            </optgroup>
+                            <optgroup label="NVIDIA Consumer">
+                                <option value="RTX 4090" selected>NVIDIA RTX 4090 (24GB)</option>
+                                <option value="RTX 3090">NVIDIA RTX 3090 (24GB)</option>
+                            </optgroup>
+                            <optgroup label="Apple Silicon (Unified)">
+                                <option value="M3_MAX">Apple M3 Max (128GB Unified)</option>
+                                <option value="M2_ULTRA">Apple M2 Ultra (192GB Unified)</option>
+                            </optgroup>
+                            <optgroup label="AMD Instinct">
+                                <option value="MI300X">AMD Instinct MI300X (192GB)</option>
+                                <option value="MI250X">AMD Instinct MI250X (128GB)</option>
+                            </optgroup>
+                            <option value="custom_hw">직접 입력 (Custom Hardware)</option>
                         </select>
+                    </div>
+                    <!-- Custom Hardware Inputs (Hidden by default) -->
+                    <div id="customHwFields" class="input-row hidden">
+                        <div class="input-group">
+                            <label for="customVram">VRAM (GB)</label>
+                            <input type="number" id="customVram" value="24">
+                        </div>
+                        <div class="input-group">
+                            <label for="customBandwidth">대역폭 (GB/s)</label>
+                            <input type="number" id="customBandwidth" value="900">
+                        </div>
                     </div>
                     <div class="input-group">
                         <label for="modelSize">Model size (Billion Params)</label>
@@ -113,7 +142,9 @@
                 <!-- Visualization Card -->
                 <div class="card chart-card">
                     <h3>VRAM Usage Breakdown</h3>
-                    <canvas id="vramChart"></canvas>
+                    <div class="chart-wrapper">
+                        <canvas id="vramChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Status Card -->
