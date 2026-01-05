@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Performance Calculator Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="light-theme">
+    <div class="app-container">
+        <!-- Sidebar: AI Assistant -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>AI Assistant</h2>
+            </div>
+            <div class="chat-container" id="chatContainer">
+                <div class="chat-message bot">
+                    안녕하세요! LLM 인프라 설계와 리소스 계산을 도와드리는 AI 어시스턴트입니다.
+                    어떤 모델을 고려 중이신가요? 혹은 서비스의 요구사항을 말씀해 주시면 적절한 사양을 추천해 드립니다.
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <textarea id="userInput" placeholder="메시지를 입력하세요..." rows="1"></textarea>
+                <button id="sendBtn">Send</button>
+            </div>
+        </aside>
+
+        <!-- Main Content: Dashboard -->
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Infrastructure Dashboard</h1>
+                <div class="header-actions">
+                    <button id="resetBtn" class="secondary-btn">Reset</button>
+                    <button id="exportBtn" class="primary-btn">Export Report</button>
+                </div>
+            </header>
+
+            <section class="metrics-grid">
+                <!-- Config Card -->
+                <div class="card config-card">
+                    <h3>Configuration</h3>
+                    <div class="input-group">
+                        <label for="gpuSelect">Target GPU</label>
+                        <select id="gpuSelect">
+                            <option value="RTX 4090">NVIDIA RTX 4090 (24GB)</option>
+                            <option value="RTX 3090">NVIDIA RTX 3090 (24GB)</option>
+                            <option value="A100_80GB">NVIDIA A100 (80GB)</option>
+                            <option value="H100_SXM">NVIDIA H100 SXM (80GB)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="modelSize">Model size (Billion Params)</label>
+                        <input type="number" id="modelSize" value="8" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="quantization">Quantization (Bits)</label>
+                        <select id="quantization">
+                            <option value="16">FP16 (16-bit)</option>
+                            <option value="8">INT8 (8-bit)</option>
+                            <option value="4" selected>INT4 (4-bit)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="contextLen">Context Length (Tokens)</label>
+                        <input type="range" id="contextLen" min="1024" max="131072" step="1024" value="8192">
+                        <span id="contextLenVal">8,192</span>
+                    </div>
+                </div>
+
+                <!-- Summary Card -->
+                <div class="card summary-card">
+                    <h3>Key Metrics Summary</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="label">Total VRAM Req.</span>
+                            <span class="value" id="totalVram">-- GB</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Max Concurrency</span>
+                            <span class="value" id="maxConcurrency">-- sessions</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Total Throughput</span>
+                            <span class="value" id="totalTps">-- TPS</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">TPS per User</span>
+                            <span class="value" id="userTps">-- TPS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization Card -->
+                <div class="card chart-card">
+                    <h3>VRAM Usage Breakdown</h3>
+                    <canvas id="vramChart"></canvas>
+                </div>
+
+                <!-- Status Card -->
+                <div class="card status-card" id="statusCard">
+                    <h3>Deployment Status</h3>
+                    <div id="statusIndicator" class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Calculating...</span>
+                    </div>
+                    <p id="statusMsg" class="status-msg">설정에 따른 배포 가능 여부를 분석 중입니다.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
