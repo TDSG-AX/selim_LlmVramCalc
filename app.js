@@ -37,9 +37,12 @@ const customVramInput = document.getElementById('customVram');
 const customBandwidthInput = document.getElementById('customBandwidth');
 const modelSizeInput = document.getElementById('modelSize');
 const quantizationSelect = document.getElementById('quantization');
-const contextLenInput = document.getElementById('contextLen');
 const contextLenVal = document.getElementById('contextLenVal');
 const agentPreset = document.getElementById('agentPreset');
+const sidebar = document.getElementById('sidebar');
+const menuToggle = document.getElementById('menuToggle');
+const closeSidebar = document.getElementById('closeSidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 
 const totalVramEl = document.getElementById('totalVram');
 const maxConcurrencyEl = document.getElementById('maxConcurrency');
@@ -107,6 +110,16 @@ function attachListeners() {
     document.getElementById('userInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleChat();
     });
+
+    // Sidebar Toggle Listeners
+    menuToggle.addEventListener('click', toggleSidebar);
+    closeSidebar.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+}
+
+function toggleSidebar() {
+    sidebar.classList.toggle('active');
+    sidebarOverlay.classList.toggle('active');
 }
 
 function handlePresetChange() {
@@ -120,6 +133,11 @@ function handlePresetChange() {
     gpuSelect.value = preset.gpu;
 
     addChatMessage(`[서비스 최적화] ${preset.desc} 권장 사양으로 자동 설정되었습니다.`, 'bot');
+
+    // Close sidebar on mobile after selection
+    if (window.innerWidth <= 768) {
+        toggleSidebar();
+    }
 }
 
 function calculate() {

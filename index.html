@@ -13,10 +13,14 @@
 
 <body class="light-theme">
     <div class="app-container">
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
         <!-- Sidebar: AI Assistant -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>AI Assistant</h2>
+                <button id="closeSidebar" class="close-btn">&times;</button>
             </div>
             <div class="chat-container" id="chatContainer">
                 <div class="chat-message bot">
@@ -33,7 +37,14 @@
         <!-- Main Content: Dashboard -->
         <main class="main-content">
             <header class="main-header">
-                <h1>Infrastructure Dashboard</h1>
+                <div class="header-left">
+                    <button id="menuToggle" class="menu-toggle">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </button>
+                    <h1>Infrastructure Dashboard</h1>
+                </div>
                 <div class="header-actions">
                     <button id="resetBtn" class="secondary-btn">Reset</button>
                     <button id="exportBtn" class="primary-btn">Export Report</button>
