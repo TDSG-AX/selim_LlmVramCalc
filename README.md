@@ -1,4 +1,4 @@
-# LLM Performance Calculator Pro
+# LLM Performance(Vram) Calculator
 
 LLM 서비스 기획자와 개발자를 위한 인터랙티브 성능 산출 도구입니다. 모델 파라미터, 양자화 비트, 하드웨어 사양을 기반으로 필요한 VRAM과 처리량(TPS), 동시 접속자 수를 예측합니다.
 
