@@ -37,6 +37,7 @@ const customVramInput = document.getElementById('customVram');
 const customBandwidthInput = document.getElementById('customBandwidth');
 const modelSizeInput = document.getElementById('modelSize');
 const quantizationSelect = document.getElementById('quantization');
+const contextLenInput = document.getElementById('contextLen');
 const contextLenVal = document.getElementById('contextLenVal');
 const agentPreset = document.getElementById('agentPreset');
 const sidebar = document.getElementById('sidebar');
