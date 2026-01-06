@@ -27,7 +27,26 @@
 - **Efficiency Factor (η)**: `Actual_TPS = Theoretical_TPS * η` (일반적으로 0.6 ~ 0.9)
 - **Overhead Constant (C)**: `Actual_VRAM = Base_VRAM + C` (프레임워크가 점유하는 기본 메모리)
 
-### 3.2 데이터 업데이트 메커니즘
+### 3.2 정밀 분석 방법론 (Analysis Methodologies)
+보정값을 도출하기 위해 수행 가능한 분석 유형입니다.
+
+1. **실측 회귀 분석 (Empirical Regression Analysis)**:
+   - 방법: 시퀀스 길이(2k, 4k, 8k...)와 배치 사이즈를 가변하며 VRAM 사용량을 측정합니다.
+   - 목적: 데이터 포인트들을 선형 회귀하여 '기본 오버헤드(절편)'와 '토큰당 메모리 증가율(기울기)'을 분리해냅니다.
+2. **프레임워크 정적 점유 분석 (Static Footprint Analysis)**:
+   - 방법: 모델 로드 전/후 및 첫 번째 추론 직후의 VRAM 변화를 모니터링합니다.
+   - 목적: CUDA 컨텍스트, 커널 로드, 기본 버퍼가 차지하는 정적 메모리(`System Reserve`)를 확정합니다.
+3. **루프라인 모델 프로파일링 (Arithmetic Intensity Analysis)**:
+   - 방법: `nsys` 또는 `nvprof`를 사용하여 연산량 대비 메모리 대역폭 사용률을 측정합니다.
+   - 목적: 하드웨어의 이론적 한계치 대비 실제 활용률(`Efficiency Factor`)을 기술적으로 증명합니다.
+4. **활성화 버퍼 분석 (Activation Buffer Analysis)**:
+   - 방법: Hidden Dimension, Attention Heads, Batch Size를 기반으로 중간 텐서 크기를 수식화합니다.
+   - 목적: 가중치 외에 추론 과정에서 일시적으로 필요한 메모리 계수(기존 1.2배 등)를 정교화합니다.
+5. **PagedAttention 단편화 분석 (Fragmentation Analysis)**:
+   - 방법: vLLM 등에서 물리적 할당량과 실제 사용된 KV 토큰 수를 비교합니다.
+   - 목적: 메모리 관리 효율에 따른 실제 가용 VRAM의 유효 용량을 산출합니다.
+
+### 3.3 데이터 업데이트 메커니즘
 - **GPU DB**: 각 GPU 모델별 Peak TFLOPS, Memory Bandwidth, VRAM 용량 정보를 유지합니다.
 - **Benchmarking Feed**: 실제 유저나 벤치마크 도구로부터 얻은 성능 데이터를 DB에 누적하여 `η`와 `C` 값을 최신화합니다.
 

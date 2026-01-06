@@ -124,6 +124,26 @@
                     </div>
                 </div>
 
+                <!-- Calibration Card -->
+                <div class="card calibration-card">
+                    <h3>Calibration Settings <span class="badge">Advanced</span></h3>
+                    <div class="input-group">
+                        <label for="effFactor">Efficiency Factor (η)</label>
+                        <input type="number" id="effFactor" value="0.7" step="0.05" min="0.1" max="1.0">
+                        <small class="helper-text">이론 대역폭 대비 실측 성능 비율 (0.6~0.9 권장)</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="sysReserve">System Reserve (GB)</label>
+                        <input type="number" id="sysReserve" value="2.0" step="0.5" min="0">
+                        <small class="helper-text">OS 및 프레임워크 기본 점유 메모리</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="kvSafety">KV Cache Safety Factor</label>
+                        <input type="number" id="kvSafety" value="1.2" step="0.1" min="1.0">
+                        <small class="helper-text">PagedAttention 미사용 시 1.2 권장</small>
+                    </div>
+                </div>
+
                 <!-- Summary Card -->
                 <div class="card summary-card">
                     <h3>Key Metrics Summary</h3>

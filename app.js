@@ -45,6 +45,11 @@ const menuToggle = document.getElementById('menuToggle');
 const closeSidebar = document.getElementById('closeSidebar');
 const sidebarOverlay = document.getElementById('sidebarOverlay');
 
+// Calibration Elements
+const effFactorInput = document.getElementById('effFactor');
+const sysReserveInput = document.getElementById('sysReserve');
+const kvSafetyInput = document.getElementById('kvSafety');
+
 const totalVramEl = document.getElementById('totalVram');
 const maxConcurrencyEl = document.getElementById('maxConcurrency');
 const totalTpsEl = document.getElementById('totalTps');
@@ -84,7 +89,7 @@ function initChart() {
 }
 
 function attachListeners() {
-    [agentPreset, gpuSelect, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput].forEach(el => {
+    [agentPreset, gpuSelect, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
         el.addEventListener('input', () => {
             if (el === contextLenInput) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
@@ -157,12 +162,17 @@ function calculate() {
     const paramsB = parseFloat(modelSizeInput.value);
     const bits = parseInt(quantizationSelect.value);
     const seqLen = parseInt(contextLenInput.value);
-    const systemReserve = 2.0;
+
+    // Calibration Values from UI
+    const systemReserve = parseFloat(sysReserveInput.value) || 2.0;
+    const efficiencyFactor = parseFloat(effFactorInput.value) || 0.7;
+    const kvSafety = parseFloat(kvSafetyInput.value) || 1.2;
+
     const frameworkOverhead = 1.5;
 
     // 1. Memory
     const weightMem = paramsB * (bits / 8);
-    const kvCacheOneUser = 1.2 * (paramsB / 8) * (seqLen / 8192);
+    const kvCacheOneUser = kvSafety * (paramsB / 8) * (seqLen / 8192);
     const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
 
     // 2. Concurrency
@@ -171,7 +181,7 @@ function calculate() {
 
     // 3. Throughput
     const theoreticalTps = bandwidth / weightMem;
-    const actualTpsTotal = theoreticalTps * 0.7; // 70% efficiency
+    const actualTpsTotal = theoreticalTps * efficiencyFactor;
     const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
 
     // Update UI

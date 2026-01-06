@@ -35,10 +35,11 @@ GitHub 저장소 설정(Settings) -> Pages 메뉴에서 `Source`를 `Deploy from
 
 | 파일명 | 구분 | 설명 |
 | :--- | :--- | :--- |
-| **[index.html](index.html)** | **메인 서비스** | 웹 기반 인터랙티브 GUI 대시보드. |
-| **[concept_study_report.md](concept_study_report.md)** | **핵심 보고서** | Roofline 모델, PagedAttention 등 기술적 근거와 상술된 수식 정리. |
+| **[index.html](index.html)** | **메인 서비스** | 웹 기반 인터랙티브 GUI 대시보드 (보정 설정 기능 포함). |
+| **[concept_study_report.md](concept_study_report.md)** | **핵심 보고서** | Roofline 모델, 5대 보정 분석 방법론 등 기술적 근거 정리. |
+| **[calibration_guide.md](calibration_guide.md)** | **실전 가이드** | 실측 데이터를 통한 정밀 보정 프로세스 및 방법 가이드. |
 | **[llm_performance_poc.py](llm_performance_poc.py)** | **PoC 스크립트** | 파이썬 기반 성능 계산기 프로토타입. |
-| **[walkthrough.md](walkthrough.md)** | **매뉴얼/워크스루** | 주요 기능 스크린샷 가이드 및 결과 요약. |
+| **[walkthrough.md](walkthrough.md)** | **매뉴얼/워크스루** | 주요 기능 및 보정 설정 사용법 스크린샷 가이드. |
 
 ## ⚠️ 안내 사항
 - 본 도구는 이론적 공식과 하드웨어 사양을 기반으로 한 **예측값**을 제공합니다.

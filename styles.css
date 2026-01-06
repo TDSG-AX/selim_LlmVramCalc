@@ -205,10 +205,25 @@ button.secondary-btn {
 .card h3 {
     font-size: 1rem;
     font-weight: 600;
-    margin-bottom: 20px;
-    color: var(--text-secondary);
-    text-transform: uppercase;
     letter-spacing: 0.5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badge {
+    font-size: 0.65rem;
+    background-color: var(--secondary-color);
+    color: var(--text-secondary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: none;
+    font-weight: 500;
+}
+
+.card.calibration-card {
+    border: 1px dashed var(--border-color);
+    background-color: rgba(248, 249, 250, 0.5);
 }
 
 .card.chart-card {
