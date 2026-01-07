@@ -161,62 +161,61 @@ function handlePresetChange() {
 }
 
 function calculate() {
-    const gpuName = gpuSelect.value;
-    const effFactorInput = document.getElementById('effFactor');
-    const sysReserveInput = document.getElementById('sysReserve');
-    const kvSafetyInput = document.getElementById('kvSafety');
+    try {
+        const gpuName = gpuSelect.value;
+        const gpuCount = parseInt(gpuCountInput.value) || 1;
+        let vram, bandwidth;
 
-    const gpuCount = parseInt(gpuCountInput.value) || 1;
-    let vram, bandwidth;
+        if (gpuName === 'custom_hw') {
+            vram = parseFloat(customVramInput.value) || 0;
+            bandwidth = parseFloat(customBandwidthInput.value) || 0;
+        } else {
+            const gpu = GPU_SPECS[gpuName];
+            if (!gpu) return;
+            vram = gpu.vram;
+            bandwidth = gpu.bandwidth;
+        }
 
-    if (gpuName === 'custom_hw') {
-        vram = parseFloat(customVramInput.value);
-        bandwidth = parseFloat(customBandwidthInput.value);
-    } else {
-        const gpu = GPU_SPECS[gpuName];
-        vram = gpu.vram;
-        bandwidth = gpu.bandwidth;
+        const totalVram = vram * gpuCount;
+        const totalBandwidth = bandwidth * gpuCount;
+
+        const paramsB = parseFloat(modelSizeInput.value) || 0;
+        const bits = parseInt(quantizationSelect.value) || 16;
+        const seqLen = parseInt(contextLenInput.value) || 1024;
+
+        // Calibration Values from UI
+        const systemReserve = parseFloat(sysReserveInput.value) || 2.0;
+        const efficiencyFactor = parseFloat(effFactorInput.value) || 0.7;
+        const kvSafety = parseFloat(kvSafetyInput.value) || 1.2;
+
+        const frameworkOverhead = 1.5;
+
+        // 1. Memory
+        const weightMem = paramsB * (bits / 8);
+        const kvCacheOneUser = kvSafety * (paramsB / 8) * (seqLen / 8192);
+        const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
+
+        // 2. Concurrency
+        const availableForKv = totalVram - weightMem - systemReserve - frameworkOverhead;
+        const maxConcurrency = availableForKv > 0 ? (kvCacheOneUser > 0 ? Math.floor(availableForKv / kvCacheOneUser) : 0) : 0;
+
+        // 3. Throughput
+        const weightSizeForTps = weightMem > 0 ? weightMem : 0.001; // Avoid div by zero
+        const theoreticalTps = totalBandwidth / weightSizeForTps;
+        const actualTpsTotal = theoreticalTps * efficiencyFactor;
+        const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
+
+        // Update UI
+        if (totalVramEl) totalVramEl.textContent = `${totalNeededOneUser.toFixed(2)} GB`;
+        if (maxConcurrencyEl) maxConcurrencyEl.textContent = `${maxConcurrency} sessions`;
+        if (totalTpsEl) totalTpsEl.textContent = `${actualTpsTotal.toFixed(1)} TPS`;
+        if (userTpsEl) userTpsEl.textContent = `${tpsPerUser.toFixed(1)} TPS`;
+
+        updateStatus(totalNeededOneUser, totalVram, maxConcurrency, gpuCount);
+        updateChart(weightMem, kvCacheOneUser, frameworkOverhead, totalVram);
+    } catch (e) {
+        console.error("Calculation Error:", e);
     }
-
-    const totalVram = vram * gpuCount;
-    const totalBandwidth = bandwidth * gpuCount;
-
-    const paramsB = parseFloat(modelSizeInput.value);
-    const bits = parseInt(quantizationSelect.value);
-    const seqLen = parseInt(contextLenInput.value);
-
-    // Calibration Values from UI
-    const systemReserve = parseFloat(sysReserveInput.value) || 2.0;
-    const efficiencyFactor = parseFloat(effFactorInput.value) || 0.7;
-    const kvSafety = parseFloat(kvSafetyInput.value) || 1.2;
-
-    const frameworkOverhead = 1.5;
-
-    // 1. Memory
-    const weightMem = paramsB * (bits / 8);
-    // VRAM Check for Weights
-    const weightsFit = weightMem < (totalVram - systemReserve);
-
-    const kvCacheOneUser = kvSafety * (paramsB / 8) * (seqLen / 8192);
-    const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
-
-    // 2. Concurrency
-    const availableForKv = totalVram - weightMem - systemReserve - frameworkOverhead;
-    const maxConcurrency = availableForKv > 0 ? Math.floor(availableForKv / kvCacheOneUser) : 0;
-
-    // 3. Throughput
-    const theoreticalTps = totalBandwidth / weightMem;
-    const actualTpsTotal = theoreticalTps * efficiencyFactor;
-    const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
-
-    // Update UI
-    totalVramEl.textContent = `${totalNeededOneUser.toFixed(2)} GB`;
-    maxConcurrencyEl.textContent = `${maxConcurrency} sessions`;
-    totalTpsEl.textContent = `${actualTpsTotal.toFixed(1)} TPS`;
-    userTpsEl.textContent = `${tpsPerUser.toFixed(1)} TPS`;
-
-    updateStatus(totalNeededOneUser, totalVram, maxConcurrency, gpuCount);
-    updateChart(weightMem, kvCacheOneUser, frameworkOverhead, totalVram);
 }
 
 function updateStatus(needed, available, concurrency, count) {
