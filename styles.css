@@ -302,17 +302,6 @@ button.secondary-btn {
     margin-bottom: 0;
 }
 
-.range-with-input .small-num-input {
-    width: 64px;
-    flex-shrink: 0;
-    padding: 6px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    text-align: center;
-    font-weight: 600;
-    background: white;
-}
-
 /* Summary Styles */
 .summary-grid {
     display: grid;
