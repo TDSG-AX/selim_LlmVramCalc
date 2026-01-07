@@ -100,18 +100,25 @@ function initChart() {
 }
 
 function attachListeners() {
-    [agentPreset, gpuSelect, gpuCountInput, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
+    const inputs = [
+        agentPreset, gpuSelect, gpuCountInput, customVramInput,
+        customBandwidthInput, modelSizeInput, quantizationSelect,
+        contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput
+    ];
+
+    inputs.forEach(el => {
+        if (!el) return; // Defensive check
         el.addEventListener('input', () => {
-            if (el === contextLenInput) {
+            if (el === contextLenInput && contextLenVal) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
             }
-            if (el === gpuCountInput) {
+            if (el === gpuCountInput && gpuCountVal) {
                 gpuCountVal.textContent = el.value;
             }
             if (el === agentPreset) {
                 handlePresetChange();
             } else if (el !== agentPreset && el !== customVramInput && el !== customBandwidthInput) {
-                agentPreset.value = "custom";
+                if (agentPreset) agentPreset.value = "custom";
             }
 
             if (el === gpuSelect) {
@@ -190,19 +197,33 @@ function calculate() {
 
         const frameworkOverhead = 1.5;
 
+        // Unified Memory (UM) Refinement
+        let effectiveEfficiency = efficiencyFactor;
+        let umSystemReserve = systemReserve;
+        const umDevices = ['M3_MAX', 'M2_ULTRA', 'Z2_MINI_G1A', 'ZGX_NANO'];
+
+        if (umDevices.includes(gpuName)) {
+            // UM devices share bandwidth with OS/CPU, typically resulting in lower sustained TPS
+            effectiveEfficiency *= 0.85; // 15% additional penalty for memory contention
+            // Suggest higher system reserve for UM
+            if (systemReserve < 4.0) {
+                umSystemReserve = systemReserve + 1.0;
+            }
+        }
+
         // 1. Memory
         const weightMem = paramsB * (bits / 8);
         const kvCacheOneUser = kvSafety * (paramsB / 8) * (seqLen / 8192);
         const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
 
         // 2. Concurrency
-        const availableForKv = totalVram - weightMem - systemReserve - frameworkOverhead;
+        const availableForKv = totalVram - weightMem - umSystemReserve - frameworkOverhead;
         const maxConcurrency = availableForKv > 0 ? (kvCacheOneUser > 0 ? Math.floor(availableForKv / kvCacheOneUser) : 0) : 0;
 
         // 3. Throughput
         const weightSizeForTps = weightMem > 0 ? weightMem : 0.001; // Avoid div by zero
         const theoreticalTps = totalBandwidth / weightSizeForTps;
-        const actualTpsTotal = theoreticalTps * efficiencyFactor;
+        const actualTpsTotal = theoreticalTps * effectiveEfficiency;
         const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
 
         // Update UI
@@ -211,16 +232,17 @@ function calculate() {
         if (totalTpsEl) totalTpsEl.textContent = `${actualTpsTotal.toFixed(1)} TPS`;
         if (userTpsEl) userTpsEl.textContent = `${tpsPerUser.toFixed(1)} TPS`;
 
-        updateStatus(totalNeededOneUser, totalVram, maxConcurrency, gpuCount);
+        updateStatus(totalNeededOneUser, totalVram, maxConcurrency, gpuCount, umDevices.includes(gpuName));
         updateChart(weightMem, kvCacheOneUser, frameworkOverhead, totalVram);
     } catch (e) {
         console.error("Calculation Error:", e);
     }
 }
 
-function updateStatus(needed, available, concurrency, count) {
+function updateStatus(needed, available, concurrency, count, isUM = false) {
     statusIndicator.className = 'status-indicator';
     const clusterText = count > 1 ? ` (${count} Nodes Cluster)` : '';
+    const umNote = isUM ? " [UM 특성 반영]" : "";
 
     if (needed > available) {
         statusIndicator.classList.add('error');
@@ -229,11 +251,11 @@ function updateStatus(needed, available, concurrency, count) {
     } else if (concurrency === 0) {
         statusIndicator.classList.add('warn');
         statusText.textContent = 'Single Session Only';
-        statusMsg.textContent = '모델 로드는 가능하나, 대화 문맥(KV Cache)을 유지하며 다수 사용자를 수용할 메모리가 부족합니다.';
+        statusMsg.textContent = `모델 로드는 가능하나, 대화 문맥(KV Cache)을 유지하며 다수 사용자를 수용할 메모리가 부족합니다.${umNote}`;
     } else {
         statusIndicator.classList.add('ok');
         statusText.textContent = count > 1 ? 'Cluster Ready' : 'Deployment Ready';
-        statusMsg.textContent = `현재 ${count}대 장비 구성으로 ${concurrency}명의 사용자를 동시에 안정적으로 수용할 수 있습니다.`;
+        statusMsg.textContent = `현재 ${count}대 장비 구성으로 ${concurrency}명의 사용자를 동시에 안정적으로 수용할 수 있습니다.${umNote}`;
     }
 }
 

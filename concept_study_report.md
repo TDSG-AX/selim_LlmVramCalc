@@ -163,3 +163,30 @@ GPU 메모리 한도 내에서 수용 가능한 최대 세션 수를 산출합�
 
 ### 11.3 통합 메모리 하드웨어의 특성
 - HP Z2 Mini G1A 및 ZGX Nano와 같은 최신 AI 워크스테이션은 고속 LPDDR5x를 GPU와 CPU가 공유하여, 일반 소비자용 GPU보다 훨씬 큰 VRAM 공간을 제공하면서도 합리적인 비용으로 대규모 모델 서빙이 가능합니다.
+
+---
+
+## 12. 통합 메모리(UM) 성능 보정 모델 (Unified Memory Performance Refinement)
+
+통합 메모리(Unified Memory) 장비는 용량 면에서 유리하지만, 대역폭 경쟁과 시스템 점유율 측면에서 전용 GPU 대비 특성이 다릅니다. 본 계산기는 이러한 UM 특성을 반영하여 보다 현실적인 예측을 제공합니다.
+
+### 12.1 대역폭 경쟁 (Bandwidth Contention)
+- UM 아키텍처에서는 GPU 컴퓨팅, CPU 연산, OS 서비스가 **동일한 메모리 버스를 공유**합니다.
+- 따라서, 이론상 대역폭(예: 273GB/s)을 LLM 추론에 100% 활용하기 어렵습니다.
+- **보정 공식**: `η_effective = η * 0.85`
+  - 기본 Efficiency Factor(η)에 15%의 추가 페널티를 적용합니다.
+
+### 12.2 시스템 점유율 증가 (Elevated System Reserve)
+- 전용 GPU는 VRAM이 독립적으로 관리되는 반면, UM 장비에서는 OS와 백그라운드 앱이 동일 메모리 풀을 사용합니다.
+- 이로 인해 안정적인 LLM 서빙을 위해 더 많은 시스템 예약 공간이 필요합니다.
+- **보정 공식**: `System Reserve (UM) = System Reserve + 1.0 GB` (최소 3GB 권장)
+
+### 12.3 UM 장비 대상 권장 사항
+| 장비 | 권장 System Reserve | 권장 η Factor |
+|---|---|---|
+| Apple M3 Max | 4 GB | 0.5~0.6 |
+| Apple M2 Ultra | 4 GB | 0.55~0.65 |
+| HP Z2 Mini G1A | 4 GB | 0.5~0.55 |
+| HP ZGX Nano G1N | 4 GB | 0.5~0.55 |
+
+이 보정 모델은 UM 하드웨어의 **VRAM 용량 대비 대역폭 제한**이라는 트레이드오프를 반영하여, 과도하게 낙관적인 성능 예측을 방지합니다.
