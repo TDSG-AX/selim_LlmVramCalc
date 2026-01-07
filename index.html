@@ -101,10 +101,10 @@
                     <div class="input-group">
                         <label for="gpuCount">GPU / 노드 개수 (Clustering)</label>
                         <div class="range-with-input">
-                            <input type="range" id="gpuCount" min="1" max="64" step="1" value="1">
-                            <span id="gpuCountVal">1</span>
+                            <input type="range" id="gpuCount" min="1" max="10" step="1" value="1">
+                            <input type="number" id="gpuCountNum" min="1" max="10" value="1" class="small-num-input">
                         </div>
-                        <small class="helper-text">클러스터 환경의 경우 총 장비 대수를 설정합니다.</small>
+                        <small class="helper-text">클러스터 환경의 경우 총 장비 대수를 설정합니다. (최대 10대)</small>
                     </div>
                     <!-- Custom Hardware Inputs (Hidden by default) -->
                     <div id="customHwFields" class="input-row hidden">

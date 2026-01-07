@@ -302,6 +302,15 @@ button.secondary-btn {
     margin-bottom: 0;
 }
 
+.small-num-input {
+    width: 60px;
+    padding: 6px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 500;
+}
+
 /* Summary Styles */
 .summary-grid {
     display: grid;

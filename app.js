@@ -49,7 +49,7 @@ const quantizationSelect = document.getElementById('quantization');
 const contextLenInput = document.getElementById('contextLen');
 const contextLenVal = document.getElementById('contextLenVal');
 const gpuCountInput = document.getElementById('gpuCount');
-const gpuCountVal = document.getElementById('gpuCountVal');
+const gpuCountNum = document.getElementById('gpuCountNum');
 const agentPreset = document.getElementById('agentPreset');
 const sidebar = document.getElementById('sidebar');
 const menuToggle = document.getElementById('menuToggle');
@@ -100,13 +100,16 @@ function initChart() {
 }
 
 function attachListeners() {
-    [agentPreset, gpuSelect, gpuCountInput, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
+    [agentPreset, gpuSelect, gpuCountInput, gpuCountNum, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
         el.addEventListener('input', () => {
             if (el === contextLenInput) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
             }
             if (el === gpuCountInput) {
-                gpuCountVal.textContent = parseInt(el.value).toLocaleString();
+                gpuCountNum.value = el.value;
+            }
+            if (el === gpuCountNum) {
+                gpuCountInput.value = el.value;
             }
             if (el === agentPreset) {
                 handlePresetChange();
