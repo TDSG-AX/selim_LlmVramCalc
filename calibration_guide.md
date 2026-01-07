@@ -40,3 +40,13 @@
 1. 실측 데이터 확보 (최소 3개 이상의 하드웨어/모델 조합)
 2. `app.js`의 `frameworkOverhead`, `systemReserve`, `efficiencyFactor` 변수 업데이트
 3. 대시보드에서 'Real-world vs. Prediction' 오차 범위 5% 이내 확인
+
+## 5. 멀티 GPU 및 특수 하드웨어 보정 (Advanced)
+
+### 5.1 인터커넥트 효율 (Interconnect Efficiency)
+1. **분석**: 장비 간 데이터 전송(NVLink, PCIe 등)으로 인해 노드 수가 늘어날수록 선형적으로 TPS가 증가하지 않을 수 있습니다.
+2. **보정**: 노드 수가 4개 이상인 대규모 클러스터의 경우 `Efficiency Factor (η)`를 단일 장비 대비 10~15% 정도 보수적으로(낮게) 설정하여 실측값에 근정시킵니다.
+
+### 5.2 통합 메모리(Unified Memory) 예약분
+1. **분석**: HP Z2 Mini G1A 등 통합 메모리 기반 장비는 OS가 점유하는 메모리가 일반 GPU 서버보다 클 수 있습니다.
+2. **보정**: `System Reserve` 값을 실제 가용 가능한 메모리(Available Memory)에서 모델 로드 전 이미 점유된 수치로 설정하여 계산 오차를 배제합니다.

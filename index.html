@@ -91,8 +91,19 @@
                                 <option value="MI300X">AMD Instinct MI300X (192GB)</option>
                                 <option value="MI250X">AMD Instinct MI250X (128GB)</option>
                             </optgroup>
+                            <optgroup label="HP AI Workstations">
+                                <option value="Z2_MINI_G1A">HP Z2 Mini G1A (128GB Unified)</option>
+                                <option value="ZGX_NANO">HP ZGX Nano G1N (128GB Unified)</option>
+                            </optgroup>
                             <option value="custom_hw">직접 입력 (Custom Hardware)</option>
-                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="gpuCount">GPU / 노드 개수 (Clustering)</label>
+                        <div class="range-with-input">
+                            <input type="range" id="gpuCount" min="1" max="64" step="1" value="1">
+                            <span id="gpuCountVal">1</span>
+                        </div>
+                        <small class="helper-text">클러스터 환경의 경우 총 장비 대수를 설정합니다.</small>
                     </div>
                     <!-- Custom Hardware Inputs (Hidden by default) -->
                     <div id="customHwFields" class="input-row hidden">
@@ -202,6 +213,9 @@
                         <p>⚠️ <strong>Disclaimer:</strong> 본 수치는 이론적 예측값으로 실제 사용 환경(OS, 프레임워크 최적화)에 따라 다를 수 있습니다. 실제 배포
                             전 실측 테스트를 강력히 권장합니다.</p>
                     </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>ⓒ Selim</p>
                 </div>
             </footer>
         </main>

@@ -1,3 +1,9 @@
+/* 
+ * LLM Performance Calculator Pro
+ * Copyright ⓒ 2026 Selim. All rights reserved.
+ * Unauthorized reproduction or distribution is prohibited.
+ */
+
 // GPU Specifications
 const GPU_SPECS = {
     // NVIDIA Data Center
@@ -15,7 +21,10 @@ const GPU_SPECS = {
     "M2_ULTRA": { vram: 192, bandwidth: 800 },
     // AMD Instinct
     "MI300X": { vram: 192, bandwidth: 5300 },
-    "MI250X": { vram: 128, bandwidth: 3200 }
+    "MI250X": { vram: 128, bandwidth: 3200 },
+    // HP AI Workstations (Unified Memory)
+    "Z2_MINI_G1A": { vram: 128, bandwidth: 256 },
+    "ZGX_NANO": { vram: 128, bandwidth: 273 }
 };
 
 // Presets Configuration
@@ -39,6 +48,8 @@ const modelSizeInput = document.getElementById('modelSize');
 const quantizationSelect = document.getElementById('quantization');
 const contextLenInput = document.getElementById('contextLen');
 const contextLenVal = document.getElementById('contextLenVal');
+const gpuCountInput = document.getElementById('gpuCount');
+const gpuCountVal = document.getElementById('gpuCountVal');
 const agentPreset = document.getElementById('agentPreset');
 const sidebar = document.getElementById('sidebar');
 const menuToggle = document.getElementById('menuToggle');
@@ -89,10 +100,13 @@ function initChart() {
 }
 
 function attachListeners() {
-    [agentPreset, gpuSelect, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
+    [agentPreset, gpuSelect, gpuCountInput, customVramInput, customBandwidthInput, modelSizeInput, quantizationSelect, contextLenInput, effFactorInput, sysReserveInput, kvSafetyInput].forEach(el => {
         el.addEventListener('input', () => {
             if (el === contextLenInput) {
                 contextLenVal.textContent = parseInt(el.value).toLocaleString();
+            }
+            if (el === gpuCountInput) {
+                gpuCountVal.textContent = parseInt(el.value).toLocaleString();
             }
             if (el === agentPreset) {
                 handlePresetChange();
@@ -148,6 +162,11 @@ function handlePresetChange() {
 
 function calculate() {
     const gpuName = gpuSelect.value;
+    const effFactorInput = document.getElementById('effFactor');
+    const sysReserveInput = document.getElementById('sysReserve');
+    const kvSafetyInput = document.getElementById('kvSafety');
+
+    const gpuCount = parseInt(gpuCountInput.value) || 1;
     let vram, bandwidth;
 
     if (gpuName === 'custom_hw') {
@@ -158,6 +177,9 @@ function calculate() {
         vram = gpu.vram;
         bandwidth = gpu.bandwidth;
     }
+
+    const totalVram = vram * gpuCount;
+    const totalBandwidth = bandwidth * gpuCount;
 
     const paramsB = parseFloat(modelSizeInput.value);
     const bits = parseInt(quantizationSelect.value);
@@ -172,15 +194,18 @@ function calculate() {
 
     // 1. Memory
     const weightMem = paramsB * (bits / 8);
+    // VRAM Check for Weights
+    const weightsFit = weightMem < (totalVram - systemReserve);
+
     const kvCacheOneUser = kvSafety * (paramsB / 8) * (seqLen / 8192);
     const totalNeededOneUser = weightMem + kvCacheOneUser + frameworkOverhead;
 
     // 2. Concurrency
-    const availableForKv = vram - weightMem - systemReserve - frameworkOverhead;
+    const availableForKv = totalVram - weightMem - systemReserve - frameworkOverhead;
     const maxConcurrency = availableForKv > 0 ? Math.floor(availableForKv / kvCacheOneUser) : 0;
 
     // 3. Throughput
-    const theoreticalTps = bandwidth / weightMem;
+    const theoreticalTps = totalBandwidth / weightMem;
     const actualTpsTotal = theoreticalTps * efficiencyFactor;
     const tpsPerUser = maxConcurrency > 0 ? actualTpsTotal / maxConcurrency : actualTpsTotal;
 
@@ -190,24 +215,26 @@ function calculate() {
     totalTpsEl.textContent = `${actualTpsTotal.toFixed(1)} TPS`;
     userTpsEl.textContent = `${tpsPerUser.toFixed(1)} TPS`;
 
-    updateStatus(totalNeededOneUser, vram, maxConcurrency);
-    updateChart(weightMem, kvCacheOneUser, frameworkOverhead, vram);
+    updateStatus(totalNeededOneUser, totalVram, maxConcurrency, gpuCount);
+    updateChart(weightMem, kvCacheOneUser, frameworkOverhead, totalVram);
 }
 
-function updateStatus(needed, available, concurrency) {
+function updateStatus(needed, available, concurrency, count) {
     statusIndicator.className = 'status-indicator';
+    const clusterText = count > 1 ? ` (${count} Nodes Cluster)` : '';
+
     if (needed > available) {
         statusIndicator.classList.add('error');
         statusText.textContent = 'OOM (Out of Memory)';
-        statusMsg.textContent = '선택한 모델이 GPU 메모리 용량을 초과합니다. 양자화 비트를 낮추거나 GPU를 변경하세요.';
+        statusMsg.textContent = `선택한 모델이 총 가용 메모리(${available.toFixed(1)}GB)${clusterText}를 초과합니다. 양자화 비트를 낮추거나 노드 수를 늘리세요.`;
     } else if (concurrency === 0) {
         statusIndicator.classList.add('warn');
         statusText.textContent = 'Single Session Only';
         statusMsg.textContent = '모델 로드는 가능하나, 대화 문맥(KV Cache)을 유지하며 다수 사용자를 수용할 메모리가 부족합니다.';
     } else {
         statusIndicator.classList.add('ok');
-        statusText.textContent = 'Deployment Ready';
-        statusMsg.textContent = `현재 설정으로 ${concurrency}명의 사용자를 동시에 안정적으로 수용할 수 있습니다.`;
+        statusText.textContent = count > 1 ? 'Cluster Ready' : 'Deployment Ready';
+        statusMsg.textContent = `현재 ${count}대 장비 구성으로 ${concurrency}명의 사용자를 동시에 안정적으로 수용할 수 있습니다.`;
     }
 }
 

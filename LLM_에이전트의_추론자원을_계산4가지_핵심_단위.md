@@ -30,6 +30,8 @@ GPU가 한 번에 담을 수 있는 데이터의 총량입니다. **가장 중�
   * **Model Weight:** 모델 자체가 차지하는 용량
   * **KV Cache:** 대화 문맥(Context)을 저장하는 용량
 * **비교 기준:** 에이전트의 경우 `(모델 용량 + 2~4GB 이상의 여유 공간)`이 내 GPU의 VRAM보다 작아야 합니다. 
+  * **멀티 GPU 확장:** 단일 카드로 부족할 경우 여러 장의 GPU를 클러스터링하여 총 VRAM을 합산할 수 있습니다.
+  * **통합 메모리(Unified Memory):** 애플 M 시리즈나 HP AI 워크스테이션(Z2 Mini, ZGX Nano)의 경우 시스템 전체 메모리를 VRAM처럼 활용하여 초거대 모델 수용이 가능합니다.
   
 
 4. 컨텍스트 길이 (Context Window, Tokens) 
@@ -58,4 +60,4 @@ GPU가 한 번에 담을 수 있는 데이터의 총량입니다. **가장 중�
 4. **결과:** 총 **약 12GB 필요**![](data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==)→24GB 카드에서 매우 안정적으로 에이전트 구동 가능 (남는 자원으로 더 큰 모델이나 병렬 처리 가능) 
   
 
-**팁:** 더 정밀한 비교를 원하신다면 Hugging Face 모델 페이지에서 해당 모델의 **'Files and versions'** 탭에 있는 파일 크기(GB)를 직접 확인하는 것이 가장 정확합니다.
+**팁:** 더 정밀한 비교를 원하신다면 Hugging Face 모델 페이지에서 해당 모델의 **'Files and versions'** 탭에 있는 파일 크기(GB)를 직접 확인하는 것이 가장 정확합니다. 또한, 대규모 모델을 위해 **클러스터나 전용 AI 워크스테이션(HP ZGX 등)** 도입을 고려한다면 총 자원 합산 공식을 반드시 체크해야 합니다.

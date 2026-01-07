@@ -1,3 +1,9 @@
+/* 
+ * LLM Performance Calculator Pro
+ * Copyright ⓒ 2026 Selim. All rights reserved.
+ * Unauthorized reproduction or distribution is prohibited.
+ */
+
 :root {
     --bg-color: #f8f9fa;
     --sidebar-bg: #ffffff;
@@ -278,10 +284,22 @@ button.secondary-btn {
     margin-bottom: 8px;
 }
 
-#contextLenVal {
+#contextLenVal,
+#gpuCountVal {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--primary-color);
+}
+
+.range-with-input {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.range-with-input input[type="range"] {
+    flex: 1;
+    margin-bottom: 0;
 }
 
 /* Summary Styles */
@@ -432,6 +450,15 @@ button.secondary-btn {
 
 .footer-disclaimer strong {
     color: #dc3545;
+}
+
+.footer-bottom {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 @media (max-width: 900px) {

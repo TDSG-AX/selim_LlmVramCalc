@@ -39,7 +39,17 @@ H100_SXM     | 70B (8-bit)     | 92.50 GB   | 0 sessions   |  33.5 / 33.5
 - **직접 입력(Custom Hardware)**: 데이터베이스에 없는 최신 장비나 클라우드 인스턴스 사양을 사용자가 직접 입력하여 시뮬레이션할 수 있습니다.
 
 ![Dashboard Enhanced](file:///C:/Users/user/.gemini/antigravity/brain/91bfd105-0fc7-4366-b66a-5d14805623d8/llm_calculator_dashboard_1767628321432.png)
-*(확장된 하드웨어 리스트 및 직접 입력 기능이 포함된 대시보드 화면)*
+| **RTX 4090 (4대)** | Llama-3 14B (4-bit) | ~11.0 GB | 7 Sessions | **High Performance** |
+
+## 6. UI 데모 및 연구 기록
+
+### 멀티 GPU 대시보드 인터페이스
+![Multi-GPU Dashboard UI Mockup](file:///C:/Users/user/.gemini/antigravity/brain/4bf4b2f3-4019-4c47-afdb-2baefe386d44/multi_gpu_dashboard_ui_mockup_1767759226754.png)
+*멀티 GPU 클러스터 설정 시 리소스가 선형적으로 확장되는 모습을 보여주는 대시보드 디자인(예시)입니다.*
+
+### HP 하드웨어 사양 조사 기록
+![HP Hardware Research Recording](file:///C:/Users/user/.gemini/antigravity/brain/4bf4b2f3-4019-4c47-afdb-2baefe386d44/hp_hardware_research_1767751586260.webp)
+*HP 최신 AI 하드웨어 사양 도출을 위해 수행된 브라우저 리서치 과정입니다.*
 
 ## 7. 결론 및 향후 계획
-본 프로젝트는 LLM 인프라 설계의 복잡성을 단순화하고, 비전문가도 '가이드'와 '프리셋'을 통해 최적의 인프라 규모를 확정할 수 있도록 돕습니다.
+본 프로젝트는 단일 워크스테이션부터 클라우드 인프라 클러스터까지 LLM 도입 시 필요한 모든 하드웨어 자원을 정밀하게 예측할 수 있는 종합 솔루션으로 진화하였습니다.

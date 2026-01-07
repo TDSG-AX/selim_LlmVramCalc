@@ -144,3 +144,22 @@ GPU 메모리 한도 내에서 수용 가능한 최대 세션 수를 산출합�
 - **Q3.** 응답 지연이 2초 이내여야 하는가? ➔ (Yes: FP16 대신 INT4/AWQ 양자화로 TPS 확보)
 
 이 가이드는 단순 계산기를 넘어, 비즈니스 요구사항을 실제 인프라 비용과 성능으로 연결하는 **컨설팅 로직**으로 활용됩니다.
+
+## 11. 멀티 GPU 및 통합 메모리 스케일링 (Multi-GPU & Unified Memory Scaling)
+
+단일 장비의 한계를 넘어 클러스터 및 클라우드 환경에서의 자원 스케일링을 위한 계산 모델입니다.
+
+### 11.1 리소스 합산 모델
+- **Total VRAM**: `VRAM_total = VRAM_per_node * Node_Count`
+  - 통합 메모리(Unified Memory) 환경(Apple M 시리즈, HP Z2/ZGX 등)에서는 시스템 메모리 전체를 공유 자원으로 산정하되, OS 및 기타 프로세스 점유율(System Reserve)을 유동적으로 고려해야 합니다.
+- **Total Bandwidth**: `Bandwidth_total = Bandwidth_per_node * Node_Count`
+  - 본 계산기는 데이터 병렬 처리(Data Parallelism)를 통한 선형적 성능 확장을 가정합니다. 모델 병렬 처리(Model Parallelism) 시 발생하는 인터커넥트(NVLink, InfiniBand) 오버헤드는 `Efficiency Factor (η)`를 통해 보정합니다.
+
+### 11.2 초거대 모델 수용 사례 (Case Study)
+- **Llama-3 405B (4-bit)**: 약 203GB VRAM 필요.
+  - **H100 (80GB) x 3**: 가능 (240GB 확보)
+  - **HP ZGX Nano (128GB) x 2**: 가능 (256GB 확보)
+  - **RTX 4090 (24GB) x 9**: 가능 (216GB 확보)
+
+### 11.3 통합 메모리 하드웨어의 특성
+- HP Z2 Mini G1A 및 ZGX Nano와 같은 최신 AI 워크스테이션은 고속 LPDDR5x를 GPU와 CPU가 공유하여, 일반 소비자용 GPU보다 훨씬 큰 VRAM 공간을 제공하면서도 합리적인 비용으로 대규모 모델 서빙이 가능합니다.
