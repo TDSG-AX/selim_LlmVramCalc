@@ -16,7 +16,7 @@
 | 버전 | 폴더 | 성격 | 바로 보기 |
 | :--- | :--- | :--- | :--- |
 | **v1** (v1.1) | [`v1/`](v1/) | 범용 정밀 계산기 — 모델 파라미터·양자화·하드웨어를 직접 지정, 멀티 GPU·보정(Calibration) 지원 | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v1/) |
-| **v2** (v2.2) | [`v2/`](v2/) | AI 코딩 에이전트 특화 — 모델 프리셋·동시 인원·작업 깊이 3가지 입력으로 필요 장비를 즉시 판정 (검토 결과 반영 완료, 추가 개선 진행 중) | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v2/) |
+| **v2** (v2.3) | [`v2/`](v2/) | AI 코딩 에이전트 특화 — 모델 프리셋·동시 인원·작업 깊이 3가지 입력으로 필요 장비를 즉시 판정 (검토 결과 반영 완료, 추가 개선 진행 중) | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v2/) |
 
 ### v1 — LLM Performance Calculator Pro
 기존 저장소의 전체 내용입니다. 모델 크기·양자화 비트·GPU 사양(멀티 GPU, HP AI 워크스테이션, 통합 메모리 포함)을 세밀하게 설정해 필요 VRAM, TPS, 동시 접속자를 계산하며, 실측값 기반 `Efficiency Factor` 보정 기능과 Roofline 모델 등 기술 근거 문서를 함께 제공합니다. 정적 파일(HTML/JS/CSS)로 구성된 다파일 앱입니다.
@@ -28,6 +28,7 @@
 - 3대 입력: **모델**(Qwen 14B / 32B INT4 / 32B FP16 / 70B FP8) · **동시 활성 인원**(1~30명) · **작업 깊이**(16k~128k 컨텍스트)
 - 출력: 필요 메모리 요약 배너, 인원 증가에 따른 VRAM 곡선과 장비 한계선 차트, 장비별(H100/A100/H200/GB10 등) 최대 인원·예상 tps·제약사항 판정
 - 단일 `index.html`(Tailwind·Chart.js CDN 사용)로 동작
+- **v2.3 변경**: "동시 접속"을 동시 처리 요청(in-flight)으로 재정의 — 팀원 수·호출 주기·출력 토큰으로 평균/피크 동시 요청과 prefill 활용률을 계산하고 "수용 가능 팀원 수"를 제시(직접 입력 모드 병행)
 - **v2.1~2.2 변경**: 사용 가능 VRAM 비율·KV 정밀도·배치 인지 tps·TTFT(prefill)·장비 9구성·컨텍스트 축 그래프, 메모리/속도 기준 최대 인원 병기
 → 자세한 내용: [v2/README.md](v2/README.md), 근거·평가: [v2/ANALYSIS.md](v2/ANALYSIS.md)
 
