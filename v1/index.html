@@ -151,8 +151,26 @@
                     </div>
                     <div class="input-group">
                         <label for="kvSafety">KV Cache Safety Factor</label>
-                        <input type="number" id="kvSafety" value="1.2" step="0.1" min="1.0">
-                        <small class="helper-text">PagedAttention 미사용 시 1.2 권장</small>
+                        <input type="number" id="kvSafety" value="1.1" step="0.05" min="1.0">
+                        <small class="helper-text">구조 기반 KV 계산값에 곱하는 여유율 (PagedAttention 사용 1.05~1.1, 미사용 1.2 권장)</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="kvBytes">KV Cache 정밀도</label>
+                        <select id="kvBytes">
+                            <option value="2" selected>FP16 / auto (2 byte)</option>
+                            <option value="1">FP8 (1 byte)</option>
+                        </select>
+                        <small class="helper-text">vLLM 기본(auto)은 FP16. FP8은 kv-cache-dtype 설정 시</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="targetTps">목표 1인 TPS</label>
+                        <input type="number" id="targetTps" value="20" step="1" min="1">
+                        <small class="helper-text">동시 인원은 메모리와 이 속도 기준 중 작은 값으로 산정 (15~20 이상 권장)</small>
+                    </div>
+                    <div class="input-group">
+                        <label for="parEff">멀티 GPU 병렬 효율</label>
+                        <input type="number" id="parEff" value="0.85" step="0.05" min="0.3" max="1.0">
+                        <small class="helper-text">GPU 2장 이상일 때 대역폭 합산에 곱함 (텐서 병렬 기준 NVLink 0.8~0.9, PCIe 0.5~0.7, 가정치)</small>
                     </div>
                 </div>
 

@@ -7,16 +7,17 @@
 
 ### 2.1 VRAM 요구량 (Memory Requirement)
 모델을 로드하고 추론을 수행하는 데 필요한 메모리입니다.
-- **Formula**: `VRAM (GB) = [P * (Q / 8) * 1.2] + KV_Cache`
-  - `P`: 파라미터 수 (Billion)
-  - `Q`: 양자화 비트수 (FP16=16, INT4=4)
-  - `1.2`: 활성화 값(Activations) 및 프레임워크 오버헤드 보정 계수
-  - `KV_Cache`: 컨텍스트 길이에 따른 추가 메모리 (Batch * Seq_Len * Hidden_Dim * Layers * 2 / 10^9)
+- **Formula (v1.1 구현 기준)**: `VRAM (GB) = P × (Q/8) × w + KV_Cache × N + C`
+  - `P`: 파라미터 수 (Billion), `Q`: 양자화 비트수 (FP16=16, INT4=4)
+  - `w`: 가중치 보정 (INT4는 스케일 등 반영 1.1, 그 외 1.0, 가정치)
+  - `KV_Cache(1인)`: `s × 2 × (Layers × KV_Heads × Head_Dim) × KV_Bytes × Seq_Len / 10^9` (`s`=안전계수, 기본 1.1). 모델 구조값은 파라미터 수로부터 로그 보간한 테이블(`KV_ELEMS`)을 사용
+  - `N`: 동시 세션 수, `C`: 프레임워크 고정 오버헤드(1.5GB) + System Reserve
 
 ### 2.2 추론 속도 (Throughput - TPS)
 초당 생성 토큰 수(Tokens Per Second)를 결정하는 요소입니다.
 - **Memory Bound (Decoding)**: 대부분의 생성 시점은 메모리 대역폭에 제약됩니다.
-  - `TPS = Memory_Bandwidth (GB/s) / [P * (Q / 8)]`
+  - 단일 사용자(batch=1): `TPS = Memory_Bandwidth / [P × (Q/8)]`
+  - N명 동시(batch=N, v1.1 구현): 한 스텝에 가중치를 1회, 모든 사용자의 KV를 읽고 사용자마다 1토큰을 생성하므로 `TPS_per_user = (Bandwidth × η) / (Weights + N × KV_per_user)`, `TPS_total = TPS_per_user × N`
 - **Compute Bound (Prefill)**: 초기 프롬프트 처리 시점은 GPU의 연산 능력에 제약됩니다.
   - `Prefill_TPS = GPU_TFLOPS / (Model_FLOPs_per_token)`
 
@@ -62,7 +63,7 @@
 
 ### 5.1 메모리 병목 현상의 근거: Roofline Model
 추론 시 생동감 있는 속도(TPS)를 결정하는 핵심은 GPU의 연산력(TFLOPS)보다 **메모리 대역폭(Bandwidth)**입니다. 
-- **Fact**: LLM의 디코딩(Decoding) 단계는 'Arithmetic Intensity'(연산 밀도)가 매우 낮아 Roofline 모델 상에서 'Memory-bound' 영역에 위치합니다. 따라서 `TPS = 대역폭 / 모델 크기` 공식이 성립하며, 이는 NVIDIA 및 Anyscale의 벤치마크 데이터와 일치합니다.
+- **Fact**: LLM의 디코딩(Decoding) 단계는 'Arithmetic Intensity'(연산 밀도)가 매우 낮아 Roofline 모델 상에서 'Memory-bound' 영역에 위치합니다. 따라서 단일 스트림에서는 `TPS ≈ 대역폭 / 모델 크기`가 성립합니다(배치가 커지면 5.4 및 2.2의 배치 식 사용). 벤치마크와의 일치 여부는 이 저장소에서 검증하지 않았으며 실측 보정이 필요합니다.
 
 ### 5.2 KV Cache 오버헤드
 - **Fact**: KV Cache는 `2 * Batch * Layers * Hidden_Dim * Seq_Len * Precision`의 공식을 따릅니다. 
@@ -70,7 +71,7 @@
 
 ### 5.3 하드웨어 효율성 (Efficiency Factor)
 - **Fact**: 이론적인 최대 성능과 실제 성능 사이에는 하드웨어 활용도(Utilization) 간극이 존재합니다. 
-- **Benchmark**: vLLM과 TensorRT-LLM은 고도화된 커널 최적화를 통해 약 80~90%의 GPU 활용률을 달성합니다. 반면 일반적인 정적 배칭(Static Batching)은 30% 이하의 효율을 보이기도 합니다. 본 솔루션의 `η` 보정 계수는 이러한 기술적 성숙도를 반영합니다.
+- **참고**: 프레임워크·하드웨어에 따라 대역폭 활용률은 크게 달라지며, 본 문서의 기본 η=0.7(0.5~0.9)은 출처가 확정되지 않은 **가정치**입니다. 반드시 `calibration_guide.md` 절차로 실측 보정하세요. (이전 판의 "80~90%", "정적 배칭 30% 이하" 수치는 출처를 확인하지 못해 삭제했습니다.)
 
 ## 6. 참고 문헌 및 자료 (References)
 1. **Kwon et al.** (2023). "Efficient Memory Management for Large Language Model Serving with PagedAttention". *SOSP 2023*. (vLLM의 핵심 논문)
@@ -152,14 +153,16 @@ GPU 메모리 한도 내에서 수용 가능한 최대 세션 수를 산출합�
 ### 11.1 리소스 합산 모델
 - **Total VRAM**: `VRAM_total = VRAM_per_node * Node_Count`
   - 통합 메모리(Unified Memory) 환경(Apple M 시리즈, HP Z2/ZGX 등)에서는 시스템 메모리 전체를 공유 자원으로 산정하되, OS 및 기타 프로세스 점유율(System Reserve)을 유동적으로 고려해야 합니다.
-- **Total Bandwidth**: `Bandwidth_total = Bandwidth_per_node * Node_Count`
-  - 본 계산기는 데이터 병렬 처리(Data Parallelism)를 통한 선형적 성능 확장을 가정합니다. 모델 병렬 처리(Model Parallelism) 시 발생하는 인터커넥트(NVLink, InfiniBand) 오버헤드는 `Efficiency Factor (η)`를 통해 보정합니다.
+- **Total Bandwidth**: `Bandwidth_total = Bandwidth_per_node × Node_Count × ParEff` (2장 이상일 때)
+  - VRAM을 합산하려면 모델을 여러 GPU에 나누는 **텐서/파이프라인 병렬**이 전제입니다. (데이터 병렬은 모델을 GPU마다 복제하므로 VRAM이 합쳐지지 않습니다. 이전 판의 "데이터 병렬 선형 확장" 서술은 오류여서 정정했습니다.)
+  - 텐서 병렬의 통신 오버헤드는 `ParEff`(기본 0.85, NVLink 0.8~0.9 / PCIe 0.5~0.7, 가정치)로 반영합니다. 텐서 병렬은 GPU 수가 어텐션/KV 헤드 수의 약수(통상 2의 거듭제곱)일 때 현실적입니다.
 
 ### 11.2 초거대 모델 수용 사례 (Case Study)
-- **Llama-3 405B (4-bit)**: 약 203GB VRAM 필요.
-  - **H100 (80GB) x 3**: 가능 (240GB 확보)
-  - **HP ZGX Nano (128GB) x 2**: 가능 (256GB 확보)
-  - **RTX 4090 (24GB) x 9**: 가능 (216GB 확보)
+- **Llama-3 405B (4-bit)**: 가중치만 약 203GB(스케일 보정 시 약 220GB), KV Cache·예약 별도.
+  - **H100 (80GB) × 4 (TP=4)**: 320GB로 현실적인 최소 구성. (×3은 용량상 가능해 보이나 8개 KV 헤드를 3으로 나눌 수 없어 텐서 병렬이 불가)
+  - **HP ZGX Nano (128GB) × 2**: 용량(256GB)상 가능하나 대역폭 273GB/s 두 대를 네트워크로 연결하므로 속도는 매우 낮음(수 tps 이하).
+  - **RTX 4090 (24GB) × 9**: 용량 합계(216GB)는 부족에 가깝고 NVLink 부재·TP 분할 불가 등으로 비현실적.
+  - 이전 판은 가중치 용량만으로 "가능"이라 표기했으나 KV·예약·병렬화 제약을 반영해 수정했습니다.
 
 ### 11.3 통합 메모리 하드웨어의 특성
 - HP Z2 Mini G1A 및 ZGX Nano와 같은 최신 AI 워크스테이션은 고속 LPDDR5x를 GPU와 CPU가 공유하여, 일반 소비자용 GPU보다 훨씬 큰 VRAM 공간을 제공하면서도 합리적인 비용으로 대규모 모델 서빙이 가능합니다.
@@ -179,7 +182,7 @@ GPU 메모리 한도 내에서 수용 가능한 최대 세션 수를 산출합�
 ### 12.2 시스템 점유율 증가 (Elevated System Reserve)
 - 전용 GPU는 VRAM이 독립적으로 관리되는 반면, UM 장비에서는 OS와 백그라운드 앱이 동일 메모리 풀을 사용합니다.
 - 이로 인해 안정적인 LLM 서빙을 위해 더 많은 시스템 예약 공간이 필요합니다.
-- **보정 공식**: `System Reserve (UM) = System Reserve + 1.0 GB` (최소 3GB 권장)
+- **보정 공식 (구현)**: System Reserve가 4GB 미만이면 `+1.0GB`(기본 2→3GB). 추가로 **GPU 사용 가능 비율**을 적용합니다(가정치): Apple M 시리즈 75%(macOS 기본 GPU 할당 상한), HP Z2 Mini·ZGX Nano 90%.
 
 ### 12.3 UM 장비 대상 권장 사항
 | 장비 | 권장 System Reserve | 권장 η Factor |
