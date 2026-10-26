@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 코딩 에이전트 자원 산출 대시보드</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Pretendard', sans-serif; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+          <i class="fa-solid fa-layer-group"></i>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-white">AI 코딩 에이전트 인프라 사이징 계산기</h1>
+          <p class="text-xs text-slate-400">개발 인원 · 모델 체급 · 작업 범위(컨텍스트)에 따른 필수 GPU 자원 및 제약사항 판별</p>
+        </div>
+      </div>
+      <button onclick="resetDefault()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition">
+        <i class="fa-solid fa-rotate-right mr-1"></i>10인 표준 권장안으로 초기화
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Top Conclusion Banner (핵심 요약 한 줄 결론) -->
+    <div id="conclusionBanner" class="bg-gradient-to-r from-blue-950/80 via-slate-900 to-slate-900 border border-blue-500/30 rounded-2xl p-5 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">현재 조건 진단</span>
+          <span id="bannerCondition" class="text-sm font-semibold text-slate-300">32B 모델 · 동시 10명 · 32k 컨텍스트</span>
+        </div>
+        <h2 id="bannerTitle" class="text-lg sm:text-xl font-extrabold text-white">
+          최소 131 GB 메모리가 필요하며, <span class="text-emerald-400">H100 × 2장 (160GB)</span> 구성이 가장 적합합니다.
+        </h2>
+      </div>
+      <div class="flex items-center gap-4 border-t md:border-t-0 pt-3 md:pt-0 border-slate-800 shrink-0">
+        <div class="text-right">
+          <span class="text-[11px] text-slate-400 block">예상 최대 처리 인원 (160GB 기준)</span>
+          <span id="bannerMaxUsers" class="text-lg font-black text-blue-400">최대 16명 동시 가능</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left: 3 Core Inputs (4 Cols) -->
+      <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 flex flex-col justify-between">
+        <div class="space-y-6">
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-3">
+            <i class="fa-solid fa-sliders text-blue-400"></i> 3대 핵심 조건 설정
+          </h3>
+
+          <!-- 1. Model Selection -->
+          <div class="space-y-2.5">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-semibold text-slate-200">1. 어떤 모델을 쓸 것인가?</label>
+              <span id="badgeModelWeight" class="text-xs font-mono text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/50">고정 가중치 67 GB</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2" id="modelBtnGroup">
+              <button onclick="setModel('14b_fp16')" id="btn_14b_fp16" class="p-3 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">Qwen 14B (경량)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">FP16 · 단순 코딩/보조용</div>
+              </button>
+              <button onclick="setModel('32b_awq')" id="btn_32b_awq" class="p-3 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">Qwen 32B (압축 INT4)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">메모리 절약 · 약간의 지능 저하</div>
+              </button>
+              <button onclick="setModel('32b_fp16')" id="btn_32b_fp16" class="p-3 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white flex items-center justify-between">
+                  <span>Qwen 32B (원본 FP16)</span>
+                  <span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded">표준</span>
+                </div>
+                <div class="text-[11px] text-slate-300 mt-0.5">Sonnet급 코딩 에이전트 주력</div>
+              </button>
+              <button onclick="setModel('70b_fp8')" id="btn_70b_fp8" class="p-3 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">Llama/Qwen 70B (대형)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">FP8 · 고난도 아키텍처 추론</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Concurrent Users -->
+          <div class="space-y-2">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-semibold text-slate-200">2. 동시에 몇 명이 작업하는가?</label>
+              <span id="lblUsers" class="text-base font-extrabold text-emerald-400">10명 동시 활성</span>
+            </div>
+            <input type="range" id="rngUsers" min="1" max="30" step="1" value="10" class="w-full bg-slate-800 h-2.5 rounded-lg appearance-none cursor-pointer">
+            <!-- Fixed alignment container matching range slider thumb constraints -->
+            <div class="relative w-full h-5 text-[11px] text-slate-500 font-medium">
+              <span class="absolute left-0 -translate-x-0">1명</span>
+              <span class="absolute left-[13.79%] -translate-x-1/2">5명</span>
+              <span class="absolute left-[31.03%] -translate-x-1/2 text-emerald-400 font-semibold">10명</span>
+              <span class="absolute left-[65.51%] -translate-x-1/2">20명</span>
+              <span class="absolute right-0 translate-x-0">30명</span>
+            </div>
+            <p class="text-[11px] text-slate-400 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800/80 mt-1">
+              <i class="fa-regular fa-lightbulb text-amber-400 mr-1"></i>
+              <strong>팁:</strong> 전체 팀원이 20명이어도 같은 순간에 동시 요청을 보내는 인원(Active)은 보통 <strong>5~10명(30~50%)</strong>입니다.
+            </p>
+          </div>
+
+          <!-- 3. Context Size (Task Depth) -->
+          <div class="space-y-2.5">
+            <div class="flex justify-between items-center">
+              <label class="text-sm font-semibold text-slate-200">3. 에이전트 작업 깊이 (1인당 컨텍스트)</label>
+              <span id="lblContext" class="text-xs font-mono text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-800/50">1인당 +4.4 GB 소모</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="setContext(16)" id="ctx_16" class="p-2.5 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">16k (단순 작업)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">단일 파일 수정 · 함수 자동완성</div>
+              </button>
+              <button onclick="setContext(32)" id="ctx_32" class="p-2.5 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white flex items-center justify-between">
+                  <span>32k (표준 에이전트)</span>
+                  <span class="text-[10px] bg-amber-500 text-slate-950 font-bold px-1.5 rounded">권장</span>
+                </div>
+                <div class="text-[11px] text-slate-300 mt-0.5">다중 파일 수정 · 빌드/에러 디버깅</div>
+              </button>
+              <button onclick="setContext(64)" id="ctx_64" class="p-2.5 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">64k (대규모 분석)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">10개+ 파일 동시 리팩토링</div>
+              </button>
+              <button onclick="setContext(128)" id="ctx_128" class="p-2.5 rounded-xl border text-left transition">
+                <div class="text-xs font-bold text-white">128k (풀 레포지토리)</div>
+                <div class="text-[11px] text-slate-400 mt-0.5">전체 코드 덤프 (메모리 과소모)</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simple Memory Equation Box -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+          <div class="flex justify-between items-center text-xs text-slate-400">
+            <span>필요 메모리 구성 (고정 + 동적)</span>
+            <span id="txtTotalVram" class="text-sm font-black text-white">총 123 GB</span>
+          </div>
+          <!-- Bar -->
+          <div class="w-full h-3.5 bg-slate-800 rounded-full overflow-hidden flex">
+            <div id="barFixed" class="bg-blue-500 h-full transition-all duration-300"></div>
+            <div id="barDynamic" class="bg-emerald-500 h-full transition-all duration-300"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-slate-300">
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm bg-blue-500 inline-block"></span>
+              모델+기본버퍼: <strong id="txtFixedMem">78 GB</strong>
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span>
+              <span id="txtDynamicLabel">10명 작업 메모리:</span> <strong id="txtDynamicMem">45 GB</strong>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: Visual Chart & Clear Constraints (7 Cols) -->
+      <section class="lg:col-span-7 space-y-6">
+
+        <!-- 1st Order Linear Graph: Users vs Required VRAM -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-line text-blue-400"></i>
+                동시 작업 인원 증가에 따른 필요 메모리 & 장비 한계선
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">
+                파란 선이 각 장비의 점선(한계선)을 뚫고 올라가면 <strong>메모리 부족(OOM)으로 구동이 멈춥니다.</strong>
+              </p>
+            </div>
+            <span id="txtFormulaSimple" class="text-xs font-mono bg-slate-950 text-cyan-300 px-2.5 py-1 rounded-lg border border-slate-800 shrink-0">
+              78GB (고정) + 인당 4.5GB
+            </span>
+          </div>
+
+          <div class="relative h-60 w-full">
+            <canvas id="scalingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Hardware Comparison Table (Constraints & Max Capacity clearly shown) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-server text-emerald-400"></i>
+              장비 구성별 수용 가능 인원 및 제약사항 판정
+            </h3>
+            <span class="text-[11px] text-slate-400">체감 속도 30 tps 이상 권장</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-800 text-[11px] text-slate-400 uppercase">
+                  <th class="py-2.5 px-3">장비 구성 (총 메모리)</th>
+                  <th class="py-2.5 px-3 text-center">최대 동시 인원<br><span class="text-[10px] font-normal text-slate-500">(현재 모델/컨텍스트)</span></th>
+                  <th class="py-2.5 px-3 text-center">1인당 체감 속도</th>
+                  <th class="py-2.5 px-3">핵심 제약사항 및 판정</th>
+                </tr>
+              </thead>
+              <tbody id="hwTableBody" class="divide-y divide-slate-800/70 text-xs">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </div>
+
+    <!-- Bottom: Clear Constraint Guide (제약사항을 확인하는 2가지 핵심 기준) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex gap-3.5 items-start">
+        <div class="w-8 h-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+          <i class="fa-solid fa-memory"></i>
+        </div>
+        <div class="space-y-1 text-xs">
+          <h4 class="font-bold text-white">제약사항 1: 용량 한계 (VRAM OOM) — "몇 명까지 버티는가?"</h4>
+          <p class="text-slate-400 leading-relaxed">
+            모델 자체 무게(고정값)를 빼고 <strong>남은 메모리를 인당 컨텍스트 메모리로 나눈 값</strong>이 최대 동시 인원입니다. 예컨대 80GB 단일 카드는 32B 원본 모델(78GB)을 올리면 남는 공간이 2GB뿐이라 <strong>단 1명도 제대로 쓸 수 없습니다.</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-4 flex gap-3.5 items-start">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+          <i class="fa-solid fa-gauge-high"></i>
+        </div>
+        <div class="space-y-1 text-xs">
+          <h4 class="font-bold text-white">제약사항 2: 대역폭 한계 (속도 병목) — "답답하지 않은가?"</h4>
+          <p class="text-slate-400 leading-relaxed">
+            메모리 용량이 충분해도 <strong>메모리 대역폭(데이터 통로)</strong>이 좁으면 글자가 뚝뚝 끊깁니다. 코딩 에이전트는 한 번에 수백 줄의 코드를 쏟아내므로 <strong>초당 30~40 토큰(tps) 이상</strong> 나와야 실무 개발자들이 답답함 없이 사용할 수 있습니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Simplified Model Presets (Fixed Weight + Base Overhead & KV per 1k tokens in FP8)
+    const MODELS = {
+      '14b_fp16': {
+        name: 'Qwen 14B (FP16)',
+        fixedVram: 36,     // ~30GB weight + 6GB runtime buffer
+        weightOnly: 30,
+        kvPer1k: 0.10      // GB per 1k tokens (FP8 KV cache standard)
+      },
+      '32b_awq': {
+        name: 'Qwen 32B (INT4 압축)',
+        fixedVram: 26,     // ~19GB weight + 7GB runtime buffer
+        weightOnly: 19,
+        kvPer1k: 0.14
+      },
+      '32b_fp16': {
+        name: 'Qwen 32B (FP16 표준)',
+        fixedVram: 76,     // ~67GB weight + 9GB runtime buffer
+        weightOnly: 67,
+        kvPer1k: 0.14      // 32k context = ~4.5GB per active user
+      },
+      '70b_fp8': {
+        name: 'Llama/Qwen 70B (FP8)',
+        fixedVram: 84,     // ~73GB weight + 11GB runtime buffer
+        weightOnly: 73,
+        kvPer1k: 0.17
+      }
+    };
+
+    // Concise, Practical Hardware Lineup (6 key tiers)
+    const HW_LIST = [
+      {
+        id: 'h100_1x',
+        name: 'H100 80GB × 1장',
+        vram: 80,
+        bw: 3350,
+        note: '단일 고성능 카드'
+      },
+      {
+        id: 'gb10_1x',
+        name: 'GB10 (DGX Spark) 128GB',
+        vram: 128,
+        bw: 273,
+        note: '개인용 통합메모리 (대역폭 주의)'
+      },
+      {
+        id: 'a100_2x',
+        name: 'A100 80GB × 2장 (160GB)',
+        vram: 160,
+        bw: 4078,
+        note: '클라우드 가성비 표준'
+      },
+      {
+        id: 'h100_2x',
+        name: 'H100 80GB × 2장 (160GB)',
+        vram: 160,
+        bw: 6700,
+        note: '10인 팀 주력 권장 사양',
+        highlight: true
+      },
+      {
+        id: 'h200_2x',
+        name: 'H200 141GB × 2장 (282GB)',
+        vram: 282,
+        bw: 9600,
+        note: '2장으로 장문/다수 인원 소화'
+      },
+      {
+        id: 'h100_4x',
+        name: 'H100 80GB × 4장 (320GB)',
+        vram: 320,
+        bw: 13400,
+        note: '70B 모델 / 20인+ 대규모 팀'
+      }
+    ];
+
+    // State
+    let currentModelKey = '32b_fp16';
+    let currentUsers = 10;
+    let currentContextK = 32;
+    let chartInstance = null;
+
+    function setModel(key) {
+      currentModelKey = key;
+      updateUI();
+    }
+
+    function setContext(k) {
+      currentContextK = k;
+      updateUI();
+    }
+
+    function resetDefault() {
+      currentModelKey = '32b_fp16';
+      currentUsers = 10;
+      currentContextK = 32;
+      document.getElementById('rngUsers').value = 10;
+      updateUI();
+    }
+
+    function updateUI() {
+      const m = MODELS[currentModelKey];
+      currentUsers = parseInt(document.getElementById('rngUsers').value, 10);
+
+      // Highlight active Model button
+      Object.keys(MODELS).forEach(k => {
+        const btn = document.getElementById('btn_' + k);
+        if (k === currentModelKey) {
+          btn.className = 'p-3 rounded-xl border text-left transition bg-blue-950/60 border-blue-500 shadow-md shadow-blue-500/10';
+        } else {
+          btn.className = 'p-3 rounded-xl border text-left transition bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-80';
+        }
+      });
+
+      // Highlight active Context button
+      [16, 32, 64, 128].forEach(k => {
+        const btn = document.getElementById('ctx_' + k);
+        if (k === currentContextK) {
+          btn.className = 'p-2.5 rounded-xl border text-left transition bg-amber-950/40 border-amber-500 shadow-md shadow-amber-500/10';
+        } else {
+          btn.className = 'p-2.5 rounded-xl border text-left transition bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-80';
+        }
+      });
+
+      // Core Math: y = fixedVram + (perUserVram * N)
+      const perUserVram = +(m.kvPer1k * currentContextK).toFixed(1);
+      const dynamicVram = +(perUserVram * currentUsers).toFixed(1);
+      const totalVram = +(m.fixedVram + dynamicVram).toFixed(1);
+
+      // Update Left Panel Labels
+      document.getElementById('badgeModelWeight').textContent = `모델+기본버퍼 ${m.fixedVram} GB`;
+      document.getElementById('lblUsers').textContent = `${currentUsers}명 동시 활성`;
+      document.getElementById('lblContext').textContent = `1인당 +${perUserVram} GB 소모`;
+
+      document.getElementById('txtTotalVram').textContent = `총 ${totalVram} GB 필요`;
+      document.getElementById('txtFixedMem').textContent = `${m.fixedVram} GB`;
+      document.getElementById('txtDynamicLabel').textContent = `${currentUsers}명 작업 메모리:`;
+      document.getElementById('txtDynamicMem').textContent = `${dynamicVram} GB`;
+
+      const pctFixed = Math.min(100, (m.fixedVram / totalVram) * 100);
+      const pctDyn = 100 - pctFixed;
+      document.getElementById('barFixed').style.width = `${pctFixed}%`;
+      document.getElementById('barDynamic').style.width = `${pctDyn}%`;
+
+      document.getElementById('txtFormulaSimple').textContent = `필요 VRAM = ${m.fixedVram}GB + (${perUserVram}GB × 인원)`;
+
+      // Update Top Banner Conclusion
+      document.getElementById('bannerCondition').textContent = `${m.name} · 동시 ${currentUsers}명 · ${currentContextK}k 컨텍스트`;
+      const maxUsersOn160 = Math.max(0, Math.floor((160 - m.fixedVram) / perUserVram));
+      document.getElementById('bannerMaxUsers').textContent = `160GB 장비 기준 최대 ${maxUsersOn160}명`;
+
+      let recHardware = '';
+      if (totalVram <= 75) {
+        recHardware = '<span class="text-emerald-400">H100 × 1장 (80GB)</span> 이상으로 구동 가능합니다.';
+      } else if (totalVram <= 155) {
+        recHardware = '<span class="text-emerald-400">H100 × 2장 (160GB)</span> 또는 <span class="text-blue-400">A100 × 2장</span> 구성이 필요합니다.';
+      } else if (totalVram <= 275) {
+        recHardware = '160GB를 초과하므로 <span class="text-amber-400">H200 × 2장 (282GB)</span> 또는 <span class="text-amber-400">4장 클러스터(320GB)</span>가 필요합니다.';
+      } else {
+        recHardware = '<span class="text-red-400">H100 × 4장 (320GB)</span> 이상이 필요하거나, 모델 압축(INT4)/컨텍스트 축소가 필수입니다.';
+      }
+      document.getElementById('bannerTitle').innerHTML = `최소 <span class="underline decoration-blue-500">${Math.ceil(totalVram)} GB</span> 메모리가 필요하며, ${recHardware}`;
+
+      // Render Hardware Table
+      renderTable(m, perUserVram, totalVram);
+
+      // Render Chart
+      renderChart(m, perUserVram, totalVram);
+    }
+
+    function renderTable(m, perUserVram, totalVram) {
+      const tbody = document.getElementById('hwTableBody');
+      tbody.innerHTML = '';
+
+      HW_LIST.forEach(hw => {
+        // Max concurrent users this hardware can hold before OOM
+        const availForKv = hw.vram - m.fixedVram;
+        const maxUsers = availForKv > 0 ? Math.floor(availForKv / perUserVram) : 0;
+        const isVramOk = hw.vram >= totalVram;
+
+        // Speed estimation (realistic MBU 0.62 & slight multi-user batching penalty)
+        const batchFactor = Math.max(0.5, 1 - (currentUsers - 1) * 0.025);
+        const tps = ((hw.bw * 0.62) / (m.weightOnly + perUserVram)) * batchFactor;
+        const isSpeedOk = tps >= 28;
+
+        let statusHtml = '';
+        let rowBg = '';
+
+        if (!isVramOk) {
+          const shortage = (totalVram - hw.vram).toFixed(0);
+          statusHtml = `<span class="inline-flex items-center gap-1.5 text-red-400 font-semibold"><i class="fa-solid fa-circle-xmark"></i> 메모리 부족 (${shortage}GB 초과 / 구동 불가)</span>`;
+          rowBg = 'opacity-60 bg-red-950/10';
+        } else if (!isSpeedOk) {
+          statusHtml = `<span class="inline-flex items-center gap-1.5 text-amber-400 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> 대역폭 병목 (용량은 되나 너무 느림)</span>`;
+          rowBg = 'bg-amber-950/10';
+        } else {
+          const margin = (hw.vram - totalVram).toFixed(0);
+          statusHtml = `<span class="inline-flex items-center gap-1.5 text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check"></i> 안정 구동 (여유 메모리 +${margin}GB)</span>`;
+          rowBg = hw.highlight ? 'bg-blue-950/25 border-l-2 border-l-blue-500' : '';
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = `transition hover:bg-slate-800/40 ${rowBg}`;
+        tr.innerHTML = `
+          <td class="py-3 px-3">
+            <div class="font-bold text-white flex items-center gap-1.5">
+              <span>${hw.name}</span>
+              ${hw.highlight ? '<span class="text-[10px] bg-blue-600 text-white px-1.5 py-0.2 rounded font-semibold">권장</span>' : ''}
+            </div>
+            <div class="text-[11px] text-slate-400">${hw.note} · 대역폭 ${(hw.bw/1000).toFixed(1)} TB/s</div>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <span class="font-mono font-bold text-sm ${maxUsers >= currentUsers ? 'text-white' : 'text-red-400'}">
+              ${maxUsers > 0 ? `최대 ${maxUsers}명` : '적재 불가'}
+            </span>
+          </td>
+          <td class="py-3 px-3 text-center font-mono">
+            ${isVramOk ? `<span class="font-bold ${isSpeedOk ? 'text-emerald-400' : 'text-amber-400'}">${tps.toFixed(0)} tps</span>` : '<span class="text-slate-600">-</span>'}
+          </td>
+          <td class="py-3 px-3">
+            ${statusHtml}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderChart(m, perUserVram, currentTotalVram) {
+      const ctx = document.getElementById('scalingChart').getContext('2d');
+      const userSteps = [1, 5, 10, 15, 20, 25, 30];
+      if (!userSteps.includes(currentUsers)) {
+        userSteps.push(currentUsers);
+        userSteps.sort((a, b) => a - b);
+      }
+
+      const labels = userSteps.map(u => `${u}명`);
+      const vramData = userSteps.map(u => +(m.fixedVram + perUserVram * u).toFixed(1));
+      const activePoint = userSteps.map(u => u === currentUsers ? +(m.fixedVram + perUserVram * u).toFixed(1) : null);
+
+      const line80 = Array(labels.length).fill(80);
+      const line160 = Array(labels.length).fill(160);
+      const line320 = Array(labels.length).fill(320);
+
+      const datasets = [
+        {
+          label: '필요 VRAM (GB)',
+          data: vramData,
+          borderColor: '#38bdf8',
+          backgroundColor: 'rgba(56, 189, 248, 0.12)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0,
+          pointRadius: 3
+        },
+        {
+          label: '현재 설정 위치',
+          data: activePoint,
+          borderColor: '#ffffff',
+          backgroundColor: '#f43f5e',
+          pointRadius: 7,
+          pointBorderWidth: 2,
+          showLine: false
+        },
+        {
+          label: '80GB 한계 (H100×1)',
+          data: line80,
+          borderColor: '#64748b',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          label: '160GB 한계 (H100/A100×2)',
+          data: line160,
+          borderColor: '#10b981',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          fill: false
+        },
+        {
+          label: '320GB 한계 (H100×4)',
+          data: line320,
+          borderColor: '#f59e0b',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          fill: false
+        }
+      ];
+
+      if (chartInstance) {
+        chartInstance.data.labels = labels;
+        chartInstance.data.datasets = datasets;
+        chartInstance.update();
+      } else {
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                labels: { color: '#cbd5e1', font: { size: 11 }, boxWidth: 14 }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#fff',
+                bodyColor: '#cbd5e1',
+                borderColor: '#334155',
+                borderWidth: 1
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.25)' }
+              },
+              y: {
+                title: { display: true, text: 'VRAM (GB)', color: '#94a3b8', font: { size: 11 } },
+                ticks: { color: '#94a3b8' },
+                grid: { color: 'rgba(51, 65, 85, 0.25)' },
+                suggestedMin: 20,
+                suggestedMax: 340
+              }
+            }
+          }
+        });
+      }
+    }
+
+    document.getElementById('rngUsers').addEventListener('input', updateUI);
+    window.onload = updateUI;
+  </script>
+</body>
+</html>
