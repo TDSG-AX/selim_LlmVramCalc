@@ -247,8 +247,8 @@
               <thead>
                 <tr class="border-b border-slate-800 text-[11px] text-slate-400 uppercase">
                   <th class="py-2.5 px-3">장비 구성 (사용가능 메모리)</th>
-                  <th class="py-2.5 px-3 text-center">최대 동시 인원</th>
-                  <th class="py-2.5 px-3 text-center">1인 속도 / TTFT</th>
+                  <th class="py-2.5 px-3 text-center">최대 동시 인원<br><span class="text-[10px] font-normal text-slate-500">(메모리·속도 중 작은 값)</span></th>
+                  <th class="py-2.5 px-3 text-center">1인 속도 / TTFT<br><span class="text-[10px] font-normal text-slate-500">(TTFT: 단일 요청 기준)</span></th>
                   <th class="py-2.5 px-3">핵심 제약사항 및 판정</th>
                 </tr>
               </thead>
@@ -345,15 +345,15 @@
   <script>
     // ---------- Models: 구조값으로 KV Cache를 유도 (2 × 레이어 × KV헤드 × head_dim × 바이트) ----------
     const MODELS = {
-      '14b_fp16': { name: 'Qwen 14B (FP16)',    paramsB: 14.7, weight: 29.5, buffer: 6,  layers: 48, kvHeads: 8, headDim: 128 },
-      '32b_awq':  { name: 'Qwen 32B (INT4)',    paramsB: 32.5, weight: 19,   buffer: 7,  layers: 64, kvHeads: 8, headDim: 128 },
-      '32b_fp16': { name: 'Qwen 32B (FP16)',    paramsB: 32.5, weight: 65.6, buffer: 9,  layers: 64, kvHeads: 8, headDim: 128 },
-      '70b_fp8':  { name: '70B급 (FP8)',        paramsB: 70.6, weight: 71,   buffer: 11, layers: 80, kvHeads: 8, headDim: 128 }
+      '14b_fp16': { name: 'Qwen 14B (FP16)',    paramsB: 14.7, weight: 29.5, buffer: 6,  layers: 48, kvHeads: 8, headDim: 128, hidden: 5120 },
+      '32b_awq':  { name: 'Qwen 32B (INT4)',    paramsB: 32.5, weight: 19,   buffer: 7,  layers: 64, kvHeads: 8, headDim: 128, hidden: 5120 },
+      '32b_fp16': { name: 'Qwen 32B (FP16)',    paramsB: 32.5, weight: 65.6, buffer: 9,  layers: 64, kvHeads: 8, headDim: 128, hidden: 5120 },
+      '70b_fp8':  { name: '70B급 (FP8)',        paramsB: 70.6, weight: 71,   buffer: 11, layers: 80, kvHeads: 8, headDim: 128, hidden: 8192 }
     };
 
-    // kv GB per 1k tokens
+    // kv GB per 1k(=1024) tokens — 컨텍스트 k 표기와 prefill 토큰 수(k×1024)의 단위를 일치시킴
     function kvPer1k(m, kvBytes) {
-      return (2 * m.layers * m.kvHeads * m.headDim * kvBytes * 1000) / 1e9;
+      return (2 * m.layers * m.kvHeads * m.headDim * kvBytes * 1024) / 1e9;
     }
 
     // ---------- Hardware: bw(GB/s 합산), tflops(FP16 dense 합산), tpEff(멀티 GPU 병렬 효율, 가정치) ----------
@@ -404,19 +404,24 @@
       const needed = fixed + p.perUser * p.users;
       const fits = usable >= needed;
       const avail = usable - fixed;
-      const maxUsers = avail > 0 ? Math.floor(avail / p.perUser) : 0;
+      const maxUsersMem = avail > 0 ? Math.floor(avail / p.perUser) : 0;
 
       // decode: 한 스텝에 가중치 1회 + 모든 사용자 KV를 읽고, 사용자마다 1토큰 생성
       const bwEff = hw.bw * hw.tpEff * p.mbu;
       const tps = bwEff / (p.m.weight + p.users * p.perUser);
+      // 1인 tps가 TPS_MIN 이상 유지되는 최대 인원: bwEff/(W + N·kv) >= TPS_MIN
+      const spdAvail = bwEff / TPS_MIN - p.m.weight;
+      const maxUsersSpeed = spdAvail > 0 ? Math.floor(spdAvail / p.perUser) : 0;
+      const maxUsers = Math.min(maxUsersMem, maxUsersSpeed);
 
-      // prefill: 2 × 파라미터 × (캐시 미적중 토큰) FLOPs
-      const flops = 2 * p.m.paramsB * 1e9 * p.ctxTokens * (1 - p.hit);
+      // prefill: 선형 항 2·P·n + attention 항 4·L·d·(n·T − n²/2), n=캐시 미적중 토큰, T=전체 컨텍스트
+      const T = p.ctxTokens, n = T * (1 - p.hit);
+      const flops = 2 * p.m.paramsB * 1e9 * n + 4 * p.m.layers * p.m.hidden * (n * T - n * n / 2);
       const ttft = flops / (hw.tflops * 1e12 * hw.tpEff * PREFILL_MFU);
 
       const speedOk = tps >= TPS_MIN;
       const ttftOk = ttft <= TTFT_MAX;
-      return { usable, needed, fits, maxUsers, tps, ttft, speedOk, ttftOk, ok: fits && speedOk && ttftOk };
+      return { usable, needed, fits, maxUsers, maxUsersMem, maxUsersSpeed, tps, ttft, speedOk, ttftOk, ok: fits && speedOk && ttftOk };
     }
 
     function updateUI() {
@@ -533,8 +538,9 @@
           </td>
           <td class="py-3 px-3 text-center">
             <span class="font-mono font-bold text-sm ${r.maxUsers >= p.users ? 'text-white' : 'text-red-400'}">
-              ${r.maxUsers > 0 ? `최대 ${r.maxUsers}명` : '적재 불가'}
+              ${r.maxUsersMem <= 0 ? '적재 불가' : (r.maxUsers > 0 ? `최대 ${r.maxUsers}명` : '속도 미달')}
             </span>
+            ${r.maxUsersMem > 0 ? `<div class="text-[10px] text-slate-500">메모리 ${r.maxUsersMem} · 속도 ${r.maxUsersSpeed}</div>` : ''}
           </td>
           <td class="py-3 px-3 text-center font-mono">
             ${r.fits ? `<div class="font-bold ${r.speedOk ? 'text-emerald-400' : 'text-amber-400'}">${r.tps.toFixed(0)} tps</div>
