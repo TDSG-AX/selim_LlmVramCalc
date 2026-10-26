@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM VRAM Calculator</title>
+  <link rel="icon" href="v1/favicon.png">
+  <style>
+    :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --text:#e2e8f0; --sub:#94a3b8; --acc:#3b82f6; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:var(--bg); color:var(--text);
+           font-family: system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif;
+           display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 16px; }
+    h1 { font-size:1.5rem; margin:0 0 6px; text-align:center; }
+    p.lead { color:var(--sub); margin:0 0 28px; text-align:center; max-width:620px; line-height:1.6; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; width:100%; max-width:720px; }
+    a.card { display:block; background:var(--card); border:1px solid var(--line); border-radius:14px;
+             padding:20px; color:inherit; text-decoration:none; transition:border-color .15s, transform .15s; }
+    a.card:hover, a.card:focus-visible { border-color:var(--acc); transform:translateY(-2px); outline:none; }
+    .tag { display:inline-block; font-size:.7rem; font-weight:700; color:#bfdbfe; background:rgba(59,130,246,.2);
+           border:1px solid rgba(59,130,246,.4); border-radius:6px; padding:2px 8px; margin-bottom:10px; }
+    h2 { font-size:1.05rem; margin:0 0 8px; }
+    .card p { margin:0; color:var(--sub); font-size:.88rem; line-height:1.55; }
+    footer { margin-top:28px; font-size:.8rem; color:var(--sub); text-align:center; line-height:1.7; }
+    footer a { color:#93c5fd; }
+  </style>
+</head>
+<body>
+  <h1>LLM 인프라 사이징 계산기</h1>
+  <p class="lead">필요 VRAM · 처리 속도(TPS) · 수용 인원을 예측합니다. 용도에 맞는 버전을 선택하세요.</p>
+
+  <div class="grid">
+    <a class="card" href="v2/">
+      <span class="tag">v2</span>
+      <h2>AI 코딩 에이전트 사이징</h2>
+      <p>모델 · 인원 · 컨텍스트 3가지 입력으로 필요한 장비를 판정합니다. 장비 9구성, TTFT, Prefix Cache 반영.</p>
+    </a>
+    <a class="card" href="v1/">
+      <span class="tag">v1</span>
+      <h2>LLM Performance Calculator Pro</h2>
+      <p>모델 파라미터·양자화·GPU(멀티 GPU, 통합 메모리 포함)를 직접 지정하는 범용 계산기. 보정 설정 지원.</p>
+    </a>
+  </div>
+
+  <footer>
+    모든 수치는 이론식 기반 <strong>예측값(참고용)</strong>입니다.<br>
+    <a href="https://github.com/TDSG-AX/selim_LlmVramCalc">GitHub 저장소 · README</a><br>
+    Copyright ⓒ 2026 Selim. All rights reserved.
+  </footer>
+</body>
+</html>

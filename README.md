@@ -9,15 +9,18 @@
 
 > 모든 수치는 이론식과 하드웨어 사양에 기반한 **예측값(참고용)** 입니다. 상용 배포 전에는 실제 벤치마크로 검증하세요.
 
+**바로 열기**: https://tdsg-ax.github.io/selim_LlmVramCalc/ (버전 선택 화면, 저장소 루트 `index.html`)
+
 ## 버전 구성
 
 | 버전 | 폴더 | 성격 | 바로 보기 |
 | :--- | :--- | :--- | :--- |
-| **v1** | [`v1/`](v1/) | 범용 정밀 계산기 — 모델 파라미터·양자화·하드웨어를 직접 지정, 멀티 GPU·보정(Calibration) 지원 | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v1/) |
-| **v2** | [`v2/`](v2/) | AI 코딩 에이전트 특화 — 모델 프리셋·동시 인원·작업 깊이 3가지 입력으로 필요 장비를 즉시 판정 (**기능 검토·업데이트 진행 예정**) | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v2/) |
+| **v1** (v1.1) | [`v1/`](v1/) | 범용 정밀 계산기 — 모델 파라미터·양자화·하드웨어를 직접 지정, 멀티 GPU·보정(Calibration) 지원 | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v1/) |
+| **v2** (v2.2) | [`v2/`](v2/) | AI 코딩 에이전트 특화 — 모델 프리셋·동시 인원·작업 깊이 3가지 입력으로 필요 장비를 즉시 판정 (검토 결과 반영 완료, 추가 개선 진행 중) | [실행](https://tdsg-ax.github.io/selim_LlmVramCalc/v2/) |
 
 ### v1 — LLM Performance Calculator Pro
 기존 저장소의 전체 내용입니다. 모델 크기·양자화 비트·GPU 사양(멀티 GPU, HP AI 워크스테이션, 통합 메모리 포함)을 세밀하게 설정해 필요 VRAM, TPS, 동시 접속자를 계산하며, 실측값 기반 `Efficiency Factor` 보정 기능과 Roofline 모델 등 기술 근거 문서를 함께 제공합니다. 정적 파일(HTML/JS/CSS)로 구성된 다파일 앱입니다.
+**v1.1 변경**: 검수 결과([v1/REVIEW.md](v1/REVIEW.md))를 반영해 KV Cache를 모델 구조 기반으로, TPS를 배치 인지 식으로 교체하고 목표 TPS 판정·멀티 GPU 병렬 효율·통합 메모리 사용 비율을 추가했습니다.
 → 자세한 내용: [v1/README.md](v1/README.md)
 
 ### v2 — AI 코딩 에이전트 인프라 사이징 계산기
@@ -25,11 +28,17 @@
 - 3대 입력: **모델**(Qwen 14B / 32B INT4 / 32B FP16 / 70B FP8) · **동시 활성 인원**(1~30명) · **작업 깊이**(16k~128k 컨텍스트)
 - 출력: 필요 메모리 요약 배너, 인원 증가에 따른 VRAM 곡선과 장비 한계선 차트, 장비별(H100/A100/H200/GB10 등) 최대 인원·예상 tps·제약사항 판정
 - 단일 `index.html`(Tailwind·Chart.js CDN 사용)로 동작
-→ 자세한 내용: [v2/README.md](v2/README.md)
+- **v2.1~2.2 변경**: 사용 가능 VRAM 비율·KV 정밀도·배치 인지 tps·TTFT(prefill)·장비 9구성·컨텍스트 축 그래프, 메모리/속도 기준 최대 인원 병기
+→ 자세한 내용: [v2/README.md](v2/README.md), 근거·평가: [v2/ANALYSIS.md](v2/ANALYSIS.md)
+
+## 문서
+- [CONCURRENCY.md](CONCURRENCY.md) — "동시 접속" 개념 검토 (동시 처리 시퀀스, 활성 비율, 피크 분위수, prefill 부하)
+- [v1/REVIEW.md](v1/REVIEW.md), [v2/ANALYSIS.md](v2/ANALYSIS.md) — 버전별 계산·이론 검수
 
 ## 로드맵
-- v2 기능 검토 및 업데이트 (계산 모델 검증, 입력·장비 목록 확장, v1 보정 로직과의 정합성 등)
-- 검토 결과에 따라 v1의 정밀 계산 기능 중 필요한 부분을 v2로 통합할지 결정
+- 동시 접속 모델 개선: 팀원 수·호출 주기·출력 토큰으로 동시 시퀀스(평균/P95)와 요구 처리량(prefill·decode) 계산 ([CONCURRENCY.md](CONCURRENCY.md) 9장)
+- 병렬 효율·prefill 활용률 등 가정치의 실측 교정
+- v1의 보정(Calibration) 기능과 v2의 통합 여부 결정
 
 ## ⚠️ 안내 사항
 - 본 도구는 **예측값**을 제공하며, OS 점유 메모리·추론 프레임워크(vLLM, TensorRT-LLM 등) 최적화 수준에 따라 실제 결과가 다를 수 있습니다.
